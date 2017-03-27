@@ -157,6 +157,12 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public static final int AUTOACK = (1 << 4);
   public static final int PREAMBLE_LENGTH = 0x0f;
   
+  // MDMCTRO1 values
+  public static final int TX_MODE = (3 << 2);
+  
+  //DACTST values
+  public static final int DAC_SRC = (7 << 12);
+ 
   // RAM Addresses
   public static final int RAM_TXFIFO	= 0x000;
   public static final int RAM_RXFIFO	= 0x080;
@@ -200,7 +206,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_CALIBRATE(48),
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
-     TX_UNDERFLOW(56);
+     TX_UNDERFLOW(56),
+	 TEST_MODE(0);
 
      private final int state;
      RadioState(int stateNo) {
@@ -761,6 +768,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
           }
           break;
       }
+        	  
       }
       configurationChanged(address, oldValue, data);
   }
@@ -994,6 +1002,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
         if (sendEvents) {
           sendEvent("STXON", null);
         }
+        // Check REG_MDMCTRL1 and REG_DACTST registers to see if it transmits a carrier
+        if( (((registers[REG_MDMCTRL1] & TX_MODE) >> 2) > 1) && (((registers[REG_DACTST] & DAC_SRC) >> 12) == 1) ) {
+        	setState(RadioState.TEST_MODE);
+        } 
         // Starting up TX subsystem - indicate that we are in TX mode!
         if (logLevel > INFO) log("Strobe STXON - transmit on! at " + cpu.cycles);
       }

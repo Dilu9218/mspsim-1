@@ -185,9 +185,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public static final int MODE_RX_ON = 0x01;
   public static final int MODE_TXRX_ON = 0x02;
   public static final int MODE_POWER_OFF = 0x03;
+  public static final int MODE_TEST_CARRIER_ON = 0x04;
   public static final int MODE_MAX = MODE_POWER_OFF;
   private static final String[] MODE_NAMES = new String[] {
-    "off", "listen", "transmit", "power_off"
+    "off", "listen", "transmit", "power_off", "carrier_test"
   };
 
   // State Machine - Datasheet Figure 25 page 44
@@ -207,7 +208,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
      TX_UNDERFLOW(56),
-	 TEST_MODE(0);
+     CARRIER_TEST(54);
 
      private final int state;
      RadioState(int stateNo) {
@@ -435,6 +436,9 @@ public class CC2420 extends Radio802154 implements USARTListener {
   
   private void reset() {
       setReg(REG_MDMCTRL0, 0x0ae2);
+      // Reset the registers concerning the unmodulated carrier
+      setReg(REG_MDMCTRL1, 0x0500);
+      setReg(REG_DACTST, 0x0000);
       registers[REG_RSSI] =  0xE000 | (registers[REG_RSSI]  & 0xFF);
   }
   
@@ -549,6 +553,9 @@ public class CC2420 extends Radio802154 implements USARTListener {
         shouldAck = false;
         crcOk = false;
         break;
+    case CARRIER_TEST:
+    	setMode(MODE_TEST_CARRIER_ON);
+    	break;
     }
 
     /* Notify state listener */
@@ -983,11 +990,13 @@ public class CC2420 extends Radio802154 implements USARTListener {
         log("Strobe RXTX-OFF!!! at " + cpu.cycles);
         if (stateMachine == RadioState.TX_ACK ||
               stateMachine == RadioState.TX_FRAME ||
-              stateMachine == RadioState.RX_FRAME) {
+              stateMachine == RadioState.RX_FRAME || 
+              stateMachine == RadioState.CARRIER_TEST) {
           log("WARNING: turning off RXTX during " + stateMachine);
+          setState(RadioState.IDLE);
         }
       }
-      setState(RadioState.IDLE);
+      
       break;
     case REG_STXON:
       // State transition valid from IDLE state or all RX states
@@ -998,14 +1007,16 @@ public class CC2420 extends Radio802154 implements USARTListener {
           (stateMachine == RadioState.RX_OVERFLOW) ||
           (stateMachine == RadioState.RX_WAIT)) {
         status |= STATUS_TX_ACTIVE;
-        setState(RadioState.TX_CALIBRATE);
+        
         if (sendEvents) {
           sendEvent("STXON", null);
         }
         // Check REG_MDMCTRL1 and REG_DACTST registers to see if it transmits a carrier
         if( (((registers[REG_MDMCTRL1] & TX_MODE) >> 2) > 1) && (((registers[REG_DACTST] & DAC_SRC) >> 12) == 1) ) {
-        	setState(RadioState.TEST_MODE);
-        } 
+        	setState(RadioState.CARRIER_TEST);
+        } else {
+        	setState(RadioState.TX_CALIBRATE);
+        }
         // Starting up TX subsystem - indicate that we are in TX mode!
         if (logLevel > INFO) log("Strobe STXON - transmit on! at " + cpu.cycles);
       }

@@ -186,7 +186,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public static final int MODE_TXRX_ON = 0x02;
   public static final int MODE_POWER_OFF = 0x03;
   public static final int MODE_TEST_CARRIER_ON = 0x04;
-  public static final int MODE_MAX = MODE_POWER_OFF;
+  public static final int MODE_MAX = MODE_TEST_CARRIER_ON;
   private static final String[] MODE_NAMES = new String[] {
     "off", "listen", "transmit", "power_off", "carrier_test"
   };

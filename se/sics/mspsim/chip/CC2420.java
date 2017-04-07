@@ -447,54 +447,66 @@ public class CC2420 extends Radio802154 implements USARTListener {
     stateMachine = state;
     /* write to FSM state register */
     registers[REG_FSMSTATE] = state.getFSMState();
+    System.out.println("stateMachine");
 
     switch(stateMachine) {
-
     case VREG_OFF:
       if (logLevel > INFO) log("VREG Off.");
+      System.out.println("setState: VREG_OFF");
       flushRX();
       flushTX();
       status &= ~(STATUS_RSSI_VALID | STATUS_XOSC16M_STABLE);
       crcOk = false;
       reset();
+      System.out.println("setMode: MODE_POWER_OFF");
       setMode(MODE_POWER_OFF);
       updateCCA();
       break;
 
     case POWER_DOWN:
+      System.out.println("setState: POWER_DOWN");
       rxFIFO.reset();
       status &= ~(STATUS_RSSI_VALID | STATUS_XOSC16M_STABLE);
       crcOk = false;
       reset();
+      System.out.println("setMode: MODE_POWER_OFF");
       setMode(MODE_POWER_OFF);
       updateCCA();
       break;
 
     case RX_CALIBRATE:
+      System.out.println("setState: RX_CALIBRATE");
       /* should be 12 according to specification */
       setSymbolEvent(12);
+      System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
     case RX_SFD_SEARCH:
+      System.out.println("setState: RX_SFD_SEARCH_before");
       zeroSymbols = 0;
       /* eight symbols after first SFD search RSSI will be valid */
       if ((status & STATUS_RSSI_VALID) == 0) {
           setSymbolEvent(8);
       }
 //      status |= STATUS_RSSI_VALID;
+      System.out.println("setState: RX_SFD_SEARCH");
       updateCCA();
+      System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
 
     case TX_CALIBRATE:
+    	System.out.println("setState: TX_CALIBRATE");
       /* 12 symbols calibration, and one byte's wait since we deliver immediately
        * to listener when after calibration?
        */
       setSymbolEvent(12 + 2);
+      System.out.println("setMode: MODE_TXRX_ON");
       setMode(MODE_TXRX_ON);
       break;
 
     case TX_PREAMBLE:
+      System.out.println("setState: TX_PREAMBLE");
       shrPos = 0;
       SHR[0] = 0;
       SHR[1] = 0;
@@ -505,6 +517,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
 
     case TX_FRAME:
+      System.out.println("setState: TX_FRAME");
       txfifoPos = 0;
       // Reset CRC ok flag to disable software acknowledgments until next received packet 
       crcOk = false;
@@ -512,24 +525,31 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
 
     case RX_WAIT:
+      System.out.println("setState: RX_WAIT");
       setSymbolEvent(8);
+      System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
       
     case IDLE:
+      System.out.println("setState: IDLE");
       status &= ~STATUS_RSSI_VALID;
+      System.out.println("setMode: MODE_TXRX_OFF");
       setMode(MODE_TXRX_OFF);
       updateCCA();
       break;
       
     case TX_ACK_CALIBRATE:
+    	System.out.println("setState: TX_ACK_CALIBRATE");
         /* TX active during ACK + NOTE: we ignore the SFD when receiving full packets so
          * we need to add another extra 2 symbols here to get a correct timing */
         status |= STATUS_TX_ACTIVE;
         setSymbolEvent(12 + 2 + 2);
+        System.out.println("setMode: MODE_TXRX_ON");
         setMode(MODE_TXRX_ON);
       break;
     case TX_ACK_PREAMBLE:
+    	System.out.println("setState: TX_ACK_PREAMBLE");
         /* same as normal preamble ?? */
         shrPos = 0;
         SHR[0] = 0;
@@ -540,12 +560,14 @@ public class CC2420 extends Radio802154 implements USARTListener {
         shrNext();
         break;
     case TX_ACK:
+    	System.out.println("setState: TX_ACK");
         ackPos = 0;
         // Reset CRC ok flag to disable software acknowledgments until next received packet 
         crcOk = false;
         ackNext();
         break;
     case RX_FRAME:
+    	System.out.println("setState: RX_FRAME");
         /* mark position of frame start - for rejecting when address is wrong */
         rxFIFO.mark();
         rxread = 0;
@@ -554,6 +576,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
         crcOk = false;
         break;
     case CARRIER_TEST:
+    	System.out.println("setState: CARRIER_TEST");
+    	System.out.println("setMode: MODE_TEST_CARRIER_ON");
     	setMode(MODE_TEST_CARRIER_ON);
     	break;
     }

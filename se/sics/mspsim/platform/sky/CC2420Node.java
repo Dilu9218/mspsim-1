@@ -50,6 +50,7 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
     public CC2420Node(String id) {
         /* this should be a config for the MSP430x1611 */
         super(id, new MSP430f1611Config());
+/**/    System.out.println("CC2420Node");        
     }
 
     public void setDebug(boolean debug) {
@@ -91,6 +92,7 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
         radio.setFIFOPort(port1, CC2420_FIFO);
 
         usart0.addUSARTListener(this);
+/**/    System.out.println("usart0.addUSARTListener(this)");
         radio.setSFDPort(port4, CC2420_SFD);
 
         USART usart = cpu.getIOUnit(USART.class, "USART1");
@@ -100,10 +102,12 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
     }
 
     public void setupNode() {
+/**/    System.out.println("setupNode");
         // create a filename for the flash file
         // This should be possible to take from a config file later!
         String fileName = config.getProperty("flashfile");
         if (fileName == null) {
+/**/        System.out.println("fileName == null");            
             fileName = firmwareFile;
             if (fileName != null) {
                 int ix = fileName.lastIndexOf('.');
@@ -120,6 +124,7 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
         setupNodePorts();
 
         if (stats != null) {
+/**/        System.out.println("stats1 != null");
             stats.addMonitor(this);
             stats.addMonitor(radio);
             stats.addMonitor(cpu);
@@ -130,10 +135,12 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
             // Add some windows for listening to serial output
             USART usart = cpu.getIOUnit(USART.class, "USART1");
             if (usart != null) {
+/**/            System.out.println("usart != null");
                 SerialMon serial = new SerialMon(usart, "USART1 Port Output");
                 registry.registerComponent("serialgui", serial);
             }
             if (stats != null) {
+/**/            System.out.println("stats2 != null");
                 // A HACK for some "graphs"!!!
                 DataChart dataChart =  new DataChart(registry, "Duty Cycle", "Duty Cycle");
                 registry.registerComponent("dutychart", dataChart);
@@ -146,6 +153,7 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
         }
 
         if (config.getPropertyAsBoolean("enableNetwork", false)) {
+/**/            System.out.println("config.getPropertyAsBoolean");
             final NetworkConnection network = new NetworkConnection();
             final RadioWrapper radioWrapper = new RadioWrapper(radio);
             radioWrapper.addPacketListener(new PacketListener() {
@@ -176,12 +184,15 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
 
     public void portWrite(IOPort source, int data) {
         if (source == port4) {
+/**/        System.out.println("source == port4");
             // Chip select = active low...
             radio.setChipSelect((data & CC2420_CHIP_SELECT) == 0);
+/**/        System.out.println("1. is cc2420 selected: " + radio.getChipSelect());
             radio.setVRegOn((data & CC2420_VREG) != 0);
             //radio.portWrite(source, data);
             flashWrite(source, data);
         } else if (source == port2) {
+/**/        System.out.println("source == port2");            
             ds2411.dataPin((data & DS2411_DATA) != 0);
         }
     }

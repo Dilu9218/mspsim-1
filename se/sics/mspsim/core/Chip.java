@@ -69,6 +69,7 @@ public abstract class Chip implements Loggable, EventSource {
   }
 
   public Chip(String id, String name, MSP430Core cpu) {
+/**/System.out.println("Chip");
     this.id = id;
     this.name = name;
     this.cpu = cpu;

@@ -208,7 +208,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
      TX_UNDERFLOW(56),
-     CARRIER_TEST(54);
+     CARRIER_TEST(54); //check 54
 
      private final int state;
      RadioState(int stateNo) {
@@ -328,6 +328,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
     public void execute(long t) {
       status |= STATUS_XOSC16M_STABLE;
       if (logLevel > INFO) log("Oscillator Stable Event.");
+/**/  System.out.println("First time IDLE");
       setState(RadioState.IDLE);
       if( (registers[REG_IOCFG1] & CCAMUX) == CCAMUX_XOSC16M_STABLE) {
         updateCCA();
@@ -342,6 +343,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       if(logLevel > INFO) log("VREG Started at: " + t + " cyc: " +
           cpu.cycles + " " + getTime());
       on = true;
+/**/  System.out.println("First time POWER_DOWN");      
       setState(RadioState.POWER_DOWN);
       updateCCA();
     }
@@ -349,6 +351,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
 
   private TimeEvent sendEvent = new TimeEvent(0, "CC2420 Send") {
     public void execute(long t) {
+/**/  System.out.println("CC2420.sendEvent");
       txNext();
     }
   };
@@ -423,7 +426,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public CC2420(MSP430Core cpu) {
       super("CC2420", "Radio", cpu);
       rxFIFO = new ArrayFIFO("RXFIFO", memory, RAM_RXFIFO, 128);
-      
+/**/System.out.println("CC2420");      
     registers[REG_SNOP] = 0;
     registers[REG_TXCTRL] = 0xa0ff;
     setModeNames(MODE_NAMES);
@@ -447,66 +450,67 @@ public class CC2420 extends Radio802154 implements USARTListener {
     stateMachine = state;
     /* write to FSM state register */
     registers[REG_FSMSTATE] = state.getFSMState();
-    System.out.println("stateMachine");
+/**/System.out.println("stateMachine");
 
     switch(stateMachine) {
     case VREG_OFF:
       if (logLevel > INFO) log("VREG Off.");
-      System.out.println("setState: VREG_OFF");
+/**/  System.out.println("setState: VREG_OFF");
+      //System.out.println("strobe" + data);
       flushRX();
       flushTX();
       status &= ~(STATUS_RSSI_VALID | STATUS_XOSC16M_STABLE);
       crcOk = false;
       reset();
-      System.out.println("setMode: MODE_POWER_OFF");
+/**/  System.out.println("setMode: MODE_POWER_OFF");
       setMode(MODE_POWER_OFF);
       updateCCA();
       break;
 
     case POWER_DOWN:
-      System.out.println("setState: POWER_DOWN");
+/**/  System.out.println("setState: POWER_DOWN");
       rxFIFO.reset();
       status &= ~(STATUS_RSSI_VALID | STATUS_XOSC16M_STABLE);
       crcOk = false;
       reset();
-      System.out.println("setMode: MODE_POWER_OFF");
+/**/  System.out.println("setMode: MODE_POWER_OFF");
       setMode(MODE_POWER_OFF);
       updateCCA();
       break;
 
     case RX_CALIBRATE:
-      System.out.println("setState: RX_CALIBRATE");
+/**/  System.out.println("setState: RX_CALIBRATE");
       /* should be 12 according to specification */
       setSymbolEvent(12);
-      System.out.println("setMode: MODE_RX_ON");
+/**/  System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
     case RX_SFD_SEARCH:
-      System.out.println("setState: RX_SFD_SEARCH_before");
+/**/  System.out.println("setState: RX_SFD_SEARCH_before");
       zeroSymbols = 0;
       /* eight symbols after first SFD search RSSI will be valid */
       if ((status & STATUS_RSSI_VALID) == 0) {
           setSymbolEvent(8);
       }
 //      status |= STATUS_RSSI_VALID;
-      System.out.println("setState: RX_SFD_SEARCH");
+/**/  System.out.println("setState: RX_SFD_SEARCH");
       updateCCA();
-      System.out.println("setMode: MODE_RX_ON");
+/**/  System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
 
     case TX_CALIBRATE:
-    	System.out.println("setState: TX_CALIBRATE");
+/**/  System.out.println("setState: TX_CALIBRATE");
       /* 12 symbols calibration, and one byte's wait since we deliver immediately
        * to listener when after calibration?
        */
       setSymbolEvent(12 + 2);
-      System.out.println("setMode: MODE_TXRX_ON");
+/**/  System.out.println("setMode: MODE_TXRX_ON");
       setMode(MODE_TXRX_ON);
       break;
 
     case TX_PREAMBLE:
-      System.out.println("setState: TX_PREAMBLE");
+/**/  System.out.println("setState: TX_PREAMBLE");
       shrPos = 0;
       SHR[0] = 0;
       SHR[1] = 0;
@@ -517,7 +521,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
 
     case TX_FRAME:
-      System.out.println("setState: TX_FRAME");
+/**/  System.out.println("setState: TX_FRAME");
       txfifoPos = 0;
       // Reset CRC ok flag to disable software acknowledgments until next received packet 
       crcOk = false;
@@ -525,31 +529,31 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
 
     case RX_WAIT:
-      System.out.println("setState: RX_WAIT");
+/**/  System.out.println("setState: RX_WAIT");
       setSymbolEvent(8);
-      System.out.println("setMode: MODE_RX_ON");
+/**/  System.out.println("setMode: MODE_RX_ON");
       setMode(MODE_RX_ON);
       break;
       
     case IDLE:
-      System.out.println("setState: IDLE");
+/**/  System.out.println("setState: IDLE");
       status &= ~STATUS_RSSI_VALID;
-      System.out.println("setMode: MODE_TXRX_OFF");
+/**/  System.out.println("setMode: MODE_TXRX_OFF");
       setMode(MODE_TXRX_OFF);
       updateCCA();
       break;
       
     case TX_ACK_CALIBRATE:
-    	System.out.println("setState: TX_ACK_CALIBRATE");
+/**/  	System.out.println("setState: TX_ACK_CALIBRATE");
         /* TX active during ACK + NOTE: we ignore the SFD when receiving full packets so
          * we need to add another extra 2 symbols here to get a correct timing */
         status |= STATUS_TX_ACTIVE;
         setSymbolEvent(12 + 2 + 2);
-        System.out.println("setMode: MODE_TXRX_ON");
+ /**/   System.out.println("setMode: MODE_TXRX_ON");
         setMode(MODE_TXRX_ON);
       break;
     case TX_ACK_PREAMBLE:
-    	System.out.println("setState: TX_ACK_PREAMBLE");
+/**/  	System.out.println("setState: TX_ACK_PREAMBLE");
         /* same as normal preamble ?? */
         shrPos = 0;
         SHR[0] = 0;
@@ -560,14 +564,14 @@ public class CC2420 extends Radio802154 implements USARTListener {
         shrNext();
         break;
     case TX_ACK:
-    	System.out.println("setState: TX_ACK");
+/**/  	System.out.println("setState: TX_ACK");
         ackPos = 0;
         // Reset CRC ok flag to disable software acknowledgments until next received packet 
         crcOk = false;
         ackNext();
         break;
     case RX_FRAME:
-    	System.out.println("setState: RX_FRAME");
+/**/  	System.out.println("setState: RX_FRAME");
         /* mark position of frame start - for rejecting when address is wrong */
         rxFIFO.mark();
         rxread = 0;
@@ -576,9 +580,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
         crcOk = false;
         break;
     case CARRIER_TEST:
-    	System.out.println("setState: CARRIER_TEST");
-    	System.out.println("setMode: MODE_TEST_CARRIER_ON");
+/**/  	System.out.println("setState: CARRIER_TEST");
+/**/   	System.out.println("setMode: MODE_TEST_CARRIER_ON");
     	setMode(MODE_TEST_CARRIER_ON);
+    	//updateCCA();
     	break;
     }
 
@@ -608,12 +613,13 @@ public class CC2420 extends Radio802154 implements USARTListener {
    */
   public void receivedByte(byte data) {
       // Received a byte from the "air"
-
+/**/  System.out.println("CC2420.receivedByte");
       if (logLevel > INFO)
         log("RF Byte received: " + Utils.hex8(data) + " state: " + stateMachine + " noZeroes: " + zeroSymbols +
               ((stateMachine == RadioState.RX_SFD_SEARCH || stateMachine == RadioState.RX_FRAME) ? "" : " *** Ignored"));
 
       if(stateMachine == RadioState.RX_SFD_SEARCH) {
+/**/      System.out.println("if stateMachine == RadioState.RX_SFD_SEARCH");
           // Look for the preamble (4 zero bytes) followed by the SFD byte 0x7A
           if(data == 0) {
               // Count zero bytes
@@ -631,6 +637,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
           }
 
       } else if(stateMachine == RadioState.RX_FRAME) {
+/**/      System.out.println("if stateMachine == RadioState.RX_FRAME");
           if (overflow) {
               /* if the CC2420 RX FIFO is in overflow - it needs a flush before receiving again */
           } else if(rxFIFO.isFull()) {
@@ -813,11 +820,14 @@ public class CC2420 extends Radio802154 implements USARTListener {
     }
 
     if (!chipSelect) {
+/**/     System.out.println("2. is cc2420 selected: " + chipSelect);
       // Chip is not selected
 
     } else if (stateMachine != RadioState.VREG_OFF) {
+/**/  System.out.println("mote: " + this.getID() + "-CC2420.dataReceived");
       switch(state) {
       case WAITING:
+/**/    System.out.println("state: WAITING");
         if ((data & FLAG_READ) != 0) {
           state = SpiState.READ_REGISTER;
         } else {
@@ -848,6 +858,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
         break;
                 
       case WRITE_REGISTER:
+/**/    System.out.println("state: WRITE_REGISTER");
         if (usartDataPos == 0) {
           source.byteReceived(registers[usartDataAddress] >> 8);
           // set the high bits
@@ -869,6 +880,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
         }
         break;
       case READ_REGISTER:
+/**/    System.out.println("state: READ_REGISTER");
         if (usartDataPos == 0) {
           source.byteReceived(registers[usartDataAddress] >> 8);
           usartDataPos = 1;
@@ -883,6 +895,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
         return;
         //break;
       case READ_RXFIFO: {
+/**/      System.out.println("state: READ_RXFIFO");
           int fifoData = rxFIFO.read(); 
           if (logLevel > INFO) log("RXFIFO READ: " + rxFIFO.stateToString());
           source.byteReceived(fifoData);
@@ -920,6 +933,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       }
       return; /* avoid returning the status byte */
       case WRITE_TXFIFO:
+/**/    System.out.println("state: WRITE_TXFIFO");
         if(txfifoFlush) {
           txCursor = 0;
           txfifoFlush = false;
@@ -941,6 +955,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
         }
         break;
       case RAM_ACCESS:
+/**/    System.out.println("state: RAM_ACCESS");
         if (usartDataPos == 0) {
           usartDataAddress |= (data << 1) & 0x180;
           ramRead = (data & FLAG_RAM_READ) != 0;
@@ -974,6 +989,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       }
       source.byteReceived(oldStatus);  
     } else {
+/**/    System.out.println("No VREG but chip select");
         /* No VREG but chip select */
         source.byteReceived(0);
         logw(WarningType.EXECUTION, "**** Warning - writing to CC2420 when VREG is off!!!");
@@ -995,9 +1011,11 @@ public class CC2420 extends Radio802154 implements USARTListener {
 
     switch (data) {
     case REG_SNOP:
+/**/  System.out.println("REG_SNOP");
       if (logLevel > INFO) log("SNOP => " + Utils.hex8(status) + " at " + cpu.cycles);
       break;
     case REG_SRXON:
+/**/  System.out.println("REG_SRXON");
       if(stateMachine == RadioState.IDLE) {
         setState(RadioState.RX_CALIBRATE);
         //updateActiveFrequency();
@@ -1010,6 +1028,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
 
       break;
     case REG_SRFOFF:
+/**/  System.out.println("REG_SRFOFF");
+/**/  System.out.println("logLevel= " + getLogLevel());
       if (logLevel > INFO) {
         log("Strobe RXTX-OFF!!! at " + cpu.cycles);
         if (stateMachine == RadioState.TX_ACK ||
@@ -1017,12 +1037,18 @@ public class CC2420 extends Radio802154 implements USARTListener {
               stateMachine == RadioState.RX_FRAME || 
               stateMachine == RadioState.CARRIER_TEST) {
           log("WARNING: turning off RXTX during " + stateMachine);
-          setState(RadioState.IDLE);
         }
       }
+/**/  System.out.println("1.REG_SRFOFF_state= " + stateMachine);
+/**/  System.out.println("1a.REG_SRFOFF_status= " + status);
       
+      setState(RadioState.IDLE);
+      
+/**/  System.out.println("2.REG_SRFOFF_state= " + stateMachine);
+/**/  System.out.println("3.REG_SRFOFF_status= " + status);
       break;
     case REG_STXON:
+/**/  System.out.println("REG_STXON");
       // State transition valid from IDLE state or all RX states
       if( (stateMachine == RadioState.IDLE) || 
           (stateMachine == RadioState.RX_CALIBRATE) ||
@@ -1030,7 +1056,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
           (stateMachine == RadioState.RX_FRAME) ||
           (stateMachine == RadioState.RX_OVERFLOW) ||
           (stateMachine == RadioState.RX_WAIT)) {
+/**/   	  System.out.println("4.REG_STXON_state= " + stateMachine);
+          
         status |= STATUS_TX_ACTIVE;
+/**/    System.out.println("5.REG_STXON_status= " + status);
         
         if (sendEvents) {
           sendEvent("STXON", null);
@@ -1038,6 +1067,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
         // Check REG_MDMCTRL1 and REG_DACTST registers to see if it transmits a carrier
         if( (((registers[REG_MDMCTRL1] & TX_MODE) >> 2) > 1) && (((registers[REG_DACTST] & DAC_SRC) >> 12) == 1) ) {
         	setState(RadioState.CARRIER_TEST);
+/**/       	 System.out.println("6.REG_STXON_state= " + stateMachine);
+/**/       	 System.out.println("7.REG_STXON_status= " + status);
         } else {
         	setState(RadioState.TX_CALIBRATE);
         }
@@ -1046,6 +1077,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       }
       break;
     case REG_STXONCCA:
+/**/  System.out.println("REG_STXONCCA");
       // Only valid from all RX states,
       // since CCA requires ??(look this up) receive symbol periods to be valid
       if( (stateMachine == RadioState.RX_CALIBRATE) ||
@@ -1068,22 +1100,30 @@ public class CC2420 extends Radio802154 implements USARTListener {
       }
       break;
     case REG_SFLUSHRX:
+/**/  System.out.println("REG_SFLUSHRX");
       flushRX();
       break;
     case REG_SFLUSHTX:
+/**/  System.out.println("REG_SFLUSHTX");
       if (logLevel > INFO) log("Flushing TXFIFO");
       flushTX();
       break;
     case REG_SXOSCON:
+/**/  System.out.println("REG_SXOSCON");
+/**/  System.out.println("8.REG_SXOSCON_state= " + stateMachine);
+/**/  System.out.println("9.REG_SXOSCON_status= " + status);
       //log("Strobe Oscillator On");
       startOscillator();
       break;
     case REG_SXOSCOFF:
+/**/  System.out.println("REG_SXOSCOFF");
       //log("Strobe Oscillator Off");
       stopOscillator();
       break;
     case REG_SACK:
+/**/  System.out.println("REG_SACK");
     case REG_SACKPEND:
+/**/  System.out.println("REG_SACKPEND");
         // Set the frame pending flag for all future autoack based on SACK/SACKPEND
         ackFramePending = data == REG_SACKPEND;
         if (stateMachine == RadioState.RX_FRAME) {
@@ -1126,6 +1166,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
 
   private void txNext() {
     if(txfifoPos <= memory[RAM_TXFIFO]) {
+/**/System.out.println("CC2420.txNext");        
       int len = memory[RAM_TXFIFO] & 0xff;
       if (txfifoPos == len - 1) {
           txCrc.setCRC(0);
@@ -1139,8 +1180,11 @@ public class CC2420 extends Radio802154 implements USARTListener {
         logw(WarningType.EXECUTION, "**** Warning - packet size too large - repeating packet bytes txfifoPos: " + txfifoPos);
       }
       if (rfListener != null) {
+/**/    System.out.println("preparing to transmit");          
         if (logLevel > INFO) log("transmitting byte: " + Utils.hex8(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
         rfListener.receivedByte((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
+/**///    System.out.println((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
+/**/    System.out.println("rfListener.receivedByte");
       }
       txfifoPos++;
       // Two symbol periods to send a byte...

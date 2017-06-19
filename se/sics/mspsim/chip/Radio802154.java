@@ -41,6 +41,7 @@ public abstract class Radio802154 extends Chip implements RFListener, RFSource {
 
     public Radio802154(String id, String name, MSP430Core cpu) {
         super(id, name, cpu);
+/**/   	System.out.println("Radio802154");
     }
 
     public abstract boolean isReadyToReceive();

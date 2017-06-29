@@ -329,6 +329,15 @@ public class MSP430Core extends Chip implements MSP430Constants {
   public void addChip(Chip chip) {
     chips.add(chip);
   }
+  
+  /* Delete it in the end - My Addition */
+  public void whichChips() {
+      for(int i=0; i < chips.size(); i++) {
+/**/    System.out.println(chips.get(i));
+/**/    System.out.println(chips.get(i).hashCode());
+        
+      }
+  }
 
   public Chip getChip(String name) {
     for(Chip chip : chips) {
@@ -621,7 +630,7 @@ public class MSP430Core extends Chip implements MSP430Constants {
   }
   
   private void executeEvents() {
-/**/ System.out.println("MSP430Core.executeEvents");      
+/**/// System.out.println("MSP430Core.executeEvents");      
     if (cycles >= nextVTimeEventCycles) {
       if (vTimeEventQueue.eventCount == 0) {
         nextVTimeEventCycles = cycles + 10000;
@@ -683,7 +692,7 @@ public class MSP430Core extends Chip implements MSP430Constants {
    * @param time
    */
   public void scheduleTimeEvent(TimeEvent event, long time) {
-/**/System.out.println("CC2420.scheduleTimeEvent");
+/**///System.out.println("CC2420.scheduleTimeEvent");
     long currentNext = vTimeEventQueue.nextTime;
     vTimeEventQueue.addEvent(event, time);
     if (currentNext != vTimeEventQueue.nextTime) {
@@ -708,7 +717,7 @@ public class MSP430Core extends Chip implements MSP430Constants {
    * @param time
    */
   public long scheduleTimeEventMillis(TimeEvent event, double msec) {
-/**/System.out.println("CC2420.scheduleTimeEventMillis");
+/**///System.out.println("CC2420.scheduleTimeEventMillis");
     /*    System.out.println("MAX_DCO " + bcs.getMaxDCOFrequency());*/
     long time = (long) (getTime() + msec / 1000 * bcs.getMaxDCOFrequency());
 //    System.out.println("Scheduling at: " + time + " (" + msec + ") getTime: " + getTime());
@@ -985,7 +994,7 @@ public class MSP430Core extends Chip implements MSP430Constants {
       // -------------------------------------------------------------------
       /* This can flag an interrupt! */
       while (cycles >= nextEventCycles) {
-/**/    System.out.println("cycles >= nextEventCycles");
+/**///    System.out.println("cycles >= nextEventCycles");
         executeEvents();
       }
 

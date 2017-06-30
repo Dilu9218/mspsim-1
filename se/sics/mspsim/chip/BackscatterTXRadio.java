@@ -226,7 +226,9 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
                 state = UartState.FIRST_CHAR;
             }
         } else {
-            if(!startSending) {
+            if (!nextChar) {
+                System.out.println("No data sent by Mspsim");
+            } else if(!startSending) {
                  System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
             } else {
                 logw(WarningType.EXECUTION, "Warning - packet size too large");

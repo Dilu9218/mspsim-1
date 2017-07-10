@@ -6,11 +6,11 @@ import se.sics.mspsim.core.USARTSource;
 public class BackscatterTagNode extends SkyNode {
     
     public BackscatterTXRadio tag;
+    
     public BackscatterTagNode() {
         super();
 /**/    System.out.println("BackscatterTagNode");
     }
-    
     
     //USARTListener
     @Override
@@ -44,6 +44,5 @@ public class BackscatterTagNode extends SkyNode {
         /* Creation of the Backscatter TX Radio module */
         tag = new BackscatterTXRadio(cpu);
 /**/    System.out.println("2.BackscatterTagNode.setupNodePorts");
-    
     }
 }

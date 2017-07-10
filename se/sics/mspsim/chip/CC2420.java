@@ -1389,6 +1389,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
   }
 
   public int getOutputPowerIndicator() {
+/**///System.out.println("(registers[REG_TXCTRL] & 0x1f): " + (registers[REG_TXCTRL] & 0x1f));      
     return (registers[REG_TXCTRL] & 0x1f);
   }
 

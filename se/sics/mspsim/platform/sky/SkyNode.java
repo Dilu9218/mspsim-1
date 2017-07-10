@@ -93,7 +93,7 @@ public class SkyNode extends MoteIVNode {
   // USART Listener
   @Override
   public void dataReceived(USARTSource source, int data) {
-/**/System.out.println(this.getID() + "-SkyNode.dataReceived");
+/**/System.out.println(this.getID() + " - SkyNode.dataReceived");
     radio.dataReceived(source, data);
 /**/System.out.println("radioMode: " + radio.getMode());
     flash.dataReceived(source, data);

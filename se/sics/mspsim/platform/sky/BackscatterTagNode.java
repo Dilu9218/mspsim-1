@@ -22,10 +22,12 @@ public class BackscatterTagNode extends SkyNode {
         // is used this time for the serial communication between the Mspsim 
         // and the Backscatter tag.
         if(radio.getChipSelect()) {
-            /* CC2420 in not selected whenever in Contiki code uart0(SPI0) "sends" to the tag */
-            radio.dataReceived(source, data);  
+          /* CC2420 in not selected whenever in Contiki code UART0(SPI0) "sends" to the tag */
+/**/      System.out.println("radio.dataReceived");            
+          radio.dataReceived(source, data);  
         } else {
-            tag.dataReceived(source, data);
+/**/      System.out.println("tag.dataReceived");          
+          tag.dataReceived(source, data);
         }
         flash.dataReceived(source, data);
         /* if nothing selected, just write back a random byte to these devs */

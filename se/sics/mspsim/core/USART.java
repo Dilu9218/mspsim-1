@@ -383,8 +383,8 @@ public class USART extends IOUnit implements SFRModule, DMATrigger, USARTSource 
         /* in this case we have shifted out the last character */
         USARTListener listener = this.usartListener;
         if (listener != null && txShiftReg != -1) {
-/**/        System.out.println("USART.handleTransmit");
-/**/        System.out.println("USART.txShiftReg2:" + txShiftReg);
+/**/        //System.out.println("USART.handleTransmit");
+/**/        //System.out.println("USART.txShiftReg2:" + txShiftReg);
             listener.dataReceived(this, txShiftReg);
         }
         /* nothing more to transmit after this - stop transmission */

@@ -648,7 +648,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
           } else {
               if (!frameRejected) {
                   rxFIFO.write(data);
-/**/              System.out.println("rxFIFO: " + data);                  
+/**/              System.out.println("rxFIFO: " + data);
+/**/              System.out.println("rxFIFO: " + (char)data);
                   if (rxread == 0) {
                       rxCrc.setCRC(0);
                       rxlen = data & 0xff;
@@ -1066,9 +1067,6 @@ public class CC2420 extends Radio802154 implements USARTListener {
         status |= STATUS_TX_ACTIVE;
 /**/    System.out.println("CC2420: " + this.hashCode() + " 5.REG_STXON_status= " + status);
         
-        if (sendEvents) {
-          sendEvent("STXON", null);
-        }
         // Check REG_MDMCTRL1 and REG_DACTST registers to see if it transmits a carrier
         if( (((registers[REG_MDMCTRL1] & TX_MODE) >> 2) > 1) && (((registers[REG_DACTST] & DAC_SRC) >> 12) == 1) ) {
             setState(RadioState.CARRIER_TEST);
@@ -1077,6 +1075,11 @@ public class CC2420 extends Radio802154 implements USARTListener {
         } else {
             setState(RadioState.TX_CALIBRATE);
         }
+        
+        if (sendEvents) {
+          sendEvent("STXON", null);
+        }
+        
         // Starting up TX subsystem - indicate that we are in TX mode!
         if (logLevel > INFO) log("Strobe STXON - transmit on! at " + cpu.cycles);
       }

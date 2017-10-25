@@ -265,7 +265,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
   private int rxread;
   private int zeroSymbols;
   private boolean ramRead = false;
-
+  
   /* RSSI is an externally set value of the RSSI for this CC2420 */
   /* low RSSI => CCA = true in normal mode */
 
@@ -585,7 +585,6 @@ public class CC2420 extends Radio802154 implements USARTListener {
 /**/    System.out.println("CC2420: " + this.hashCode() + " setState: CARRIER_TEST");
 /**/    System.out.println("CC2420: " + this.hashCode() + " setMode: MODE_TEST_CARRIER_ON");
         setMode(MODE_TEST_CARRIER_ON);
-        //updateCCA();
         break;
     }
 

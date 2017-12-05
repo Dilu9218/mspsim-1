@@ -129,8 +129,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         rfListener.receivedByte((byte) (txBuffer[bufferPos] & 0xFF));
         /**/ System.out.printf("txbuffer[%d] = %d\n", bufferPos, (byte) txBuffer[bufferPos]);
         /**/ System.out.println(txBuffer[bufferPos] + " sent");
-        /**/ System.out.println((char) txBuffer[bufferPos] + " sent");
-      }
+        /**/ //System.out.println((char) txBuffer[bufferPos] + " sent");
+      } 
       bufferPos++;
       // Two symbol periods to send a byte...
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);
@@ -235,11 +235,15 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 /**/System.out.println("CHECK this!");
       }
     } else {
+      // try to find sth with INFO.WarningType.EXECUTION shows sth that doesn;t have to be shown each time.
       if (ongoingTransmsission) {
+        //logw(WarningType.EXECUTION, "Ongoing Transmission from the tag");
         System.out.println("Ongoing Transmission");
       } else if(!nextChar) {
+        //logw(WarningType.EXECUTION, "No data sent by Mspsim yet!!");
         System.out.println("No data sent by Mspsim");
       } else if (!startSending) {
+        //logw(WarningType.EXECUTION, "Character s came, waiting for new line character - No data sent by Mspsim yet!");
         System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
       } else {
         logw(WarningType.EXECUTION, "Warning - packet size too large");
@@ -250,12 +254,14 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   /* Not used by the tag */
   @Override
   public int getConfiguration(int parameter) {
+/**/System.out.println("BackscatterTXRadio.getConfiguration");    
     return 0;
   }
 
   /* Not used by the tag */
   @Override
   public int getModeMax() {
+/**/System.out.println("BackscatterTXRadio.getModeMax");    
     return 0;
   }
 

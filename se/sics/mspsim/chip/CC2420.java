@@ -48,6 +48,7 @@ import se.sics.mspsim.util.CCITT_CRC;
 import se.sics.mspsim.util.Utils;
 
 public class CC2420 extends Radio802154 implements USARTListener {
+  
 
   public enum Reg {
     SNOP, SXOSCON, STXCAL, SRXON, /* 0x00 */
@@ -613,6 +614,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
    * @see se.sics.mspsim.chip.RFListener#receivedByte(byte)
    */
   public void receivedByte(byte data) {
+      
       // Received a byte from the "air"
 /**/  System.out.println("CC2420: " + this.hashCode() + " receivedByte");
       if (logLevel > INFO)
@@ -621,7 +623,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
 
       if(stateMachine == RadioState.RX_SFD_SEARCH) {
 /**/      System.out.println("CC2420: " + this.hashCode() + " if stateMachine == RadioState.RX_SFD_SEARCH");
-/**/      System.out.println("CC2420: " + this.hashCode() + " Byte received: " + data);          
+/**/      System.out.println("CC2420: " + this.hashCode() + " Byte received: " + data);
           // Look for the preamble (4 zero bytes) followed by the SFD byte 0x7A
           if(data == 0) {
               // Count zero bytes
@@ -648,7 +650,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
               if (!frameRejected) {
                   rxFIFO.write(data);
 /**/              System.out.println("rxFIFO: " + data);
-/**/              System.out.println("rxFIFO: " + (char)data);
+/**/              //System.out.println("rxFIFO: " + (char)data);
                   if (rxread == 0) {
                       rxCrc.setCRC(0);
                       rxlen = data & 0xff;
@@ -1191,6 +1193,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
 /**/    System.out.println("CC2420: " + this.hashCode() + " rfListener.receivedByte");
         if (logLevel > INFO) log("transmitting byte: " + Utils.hex8(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
         rfListener.receivedByte((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
+/**/    System.out.printf("CC2420 " + this.hashCode() + " - txbuffer[%d] = %d\n", (txfifoPos + 5), (byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
+/**/    System.out.println((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF) + " sent by CC2420 " + this.hashCode());
 /**///    System.out.println((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
       }
       

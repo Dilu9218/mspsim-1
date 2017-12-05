@@ -184,15 +184,15 @@ public abstract class CC2420Node extends GenericNode implements PortListener, US
 
     public void portWrite(IOPort source, int data) {
         if (source == port4) {
-/**/        System.out.println("source == port4");
+/**/        System.out.println(radio.hashCode() + " source == port4");
             // Chip select = active low...
             radio.setChipSelect((data & CC2420_CHIP_SELECT) == 0);
-/**/        System.out.println("1. is cc2420 selected: " + radio.getChipSelect());
+/**/        System.out.println("1. is cc2420: " + radio.hashCode() + " selected: " + radio.getChipSelect());
             radio.setVRegOn((data & CC2420_VREG) != 0);
             //radio.portWrite(source, data);
             flashWrite(source, data);
         } else if (source == port2) {
-/**/        System.out.println("source == port2");            
+/**/        System.out.println(radio.hashCode() + " source == port2");            
             ds2411.dataPin((data & DS2411_DATA) != 0);
         }
     }

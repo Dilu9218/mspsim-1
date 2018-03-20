@@ -62,7 +62,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int payload = 0;
   private int payloadLength = 0;
   private int intermediateValue = 0;
-  private boolean startSending = false;
+  private boolean startFillingTxBuffer = false;
   private boolean nextChar = false;
   private boolean ongoingTransmsission = false;
 
@@ -109,7 +109,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     // been calculated and the first 6 bytes which constitute the synchronization
     // header.
     int packetLength = 6 + payloadLength;
-    /**/ System.out.println("packetLength: " + packetLength);
+    /**/ System.out.println("PHY packetLength: " + packetLength);
     if (bufferPos < packetLength) {
       /**/ System.out.println("BackscatterTagRadio: " + this.hashCode() + " txNext");
       /* Calculation of the CRC */
@@ -145,7 +145,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   public void dataReceived(USARTSource source, int data) {
 /**/System.out.println("BackscatterTXRadio: " + this.hashCode() + " dataReceived");
     
-/**/System.out.println("startSending: " + startSending);
+/**/System.out.println("startFillingTxBuffer: " + startFillingTxBuffer);
 /**/System.out.println("1.ongoingTransmsission: " + ongoingTransmsission);
      
     // Send "s\n" before you start sending the packet through UART0.
@@ -159,7 +159,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     } else if (((data & 0xFF) == '\n') && nextChar) {
       /**/ System.out.println("new line came");
       nextChar = false;
-      startSending = true;
+      startFillingTxBuffer = true;
       return;
     }
     
@@ -174,7 +174,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
     // The following statement is executed 125 times for the calculation of the 
     // payload plus 1 for the detection of the new line character.
-    if (startSending && (payload < 126)) {
+    if (startFillingTxBuffer && (payload < 126)) {
       if ((data & 0xFF) != '\n') {
         /**/ System.out.println("data1: " + (data & 0xFF));
         if ((data & 0xFF) <= 57) {
@@ -226,7 +226,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         
         payload = 0;
         txbufferPos = 6;
-        startSending = false;
+        startFillingTxBuffer = false;
         
         /* Transmit */
         txNext();
@@ -235,18 +235,19 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 /**/System.out.println("CHECK this!");
       }
     } else {
-      // try to find sth with INFO.WarningType.EXECUTION shows sth that doesn;t have to be shown each time.
-      if (ongoingTransmsission) {
-        //logw(WarningType.EXECUTION, "Ongoing Transmission from the tag");
+      // if the txBuffer is already full with the maximum effective payload raise a warning
+      if (payload >= 126) {
+        System.out.println("WARNING - PACKET SIZE TOO LARGE");
+        logw(WarningType.EXECUTION, "Warning - packet size too large");
+      } else if (ongoingTransmsission) {
         System.out.println("Ongoing Transmission");
+        logw(WarningType.EXECUTION, "Ongoing Transmission from the tag");
       } else if(!nextChar) {
         //logw(WarningType.EXECUTION, "No data sent by Mspsim yet!!");
         System.out.println("No data sent by Mspsim");
-      } else if (!startSending) {
+      } else if (!startFillingTxBuffer) {
         //logw(WarningType.EXECUTION, "Character s came, waiting for new line character - No data sent by Mspsim yet!");
         System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
-      } else {
-        logw(WarningType.EXECUTION, "Warning - packet size too large");
       }
     }
   }

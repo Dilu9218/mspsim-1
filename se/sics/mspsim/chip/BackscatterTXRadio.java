@@ -69,8 +69,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private CCITT_CRC txCrc = new CCITT_CRC();
 
   // 802.15.4 symbol period in ms
-  public static final double SYMBOL_PERIOD = 0.016; // 16 us
-
+  public static final double SYMBOL_PERIOD = 0.016; // 16 us\
+  
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
     /**/ System.out.println("BackscatterTXRadio: " + this.hashCode());
@@ -230,7 +230,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         
         /* Transmit */
         txNext();
-
+        
         state = UartState.FIRST_CHAR;
 /**/System.out.println("CHECK this!");
       }

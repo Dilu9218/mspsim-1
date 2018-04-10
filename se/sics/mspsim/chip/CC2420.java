@@ -209,7 +209,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
      TX_UNDERFLOW(56),
-     CARRIER_TEST(54); //check 54
+     CARRIER_TEST(32);
 
      private final int state;
      RadioState(int stateNo) {

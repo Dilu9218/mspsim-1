@@ -39,6 +39,9 @@
 package se.sics.mspsim.chip;
 
 import se.sics.mspsim.core.EmulationLogger.WarningType;
+
+import java.util.ArrayList;
+
 import se.sics.mspsim.core.Chip;
 import se.sics.mspsim.core.TimeEvent;
 import se.sics.mspsim.core.USARTListener;
@@ -70,6 +73,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
   // 802.15.4 symbol period in ms
   public static final double SYMBOL_PERIOD = 0.016; // 16 us\
+  
+  ArrayList<Integer> prr = new ArrayList<Integer>();
   
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
@@ -130,7 +135,12 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         /**/ System.out.printf("txbuffer[%d] = %d\n", bufferPos, (byte) txBuffer[bufferPos]);
         /**/ System.out.println(txBuffer[bufferPos] + " sent");
         /**/ //System.out.println((char) txBuffer[bufferPos] + " sent");
-      } 
+        /**/ prr.add(payloadLength);
+        ///**/System.out.println("1.prr" + prr);
+      } else {
+        ///**/ prr.add(0);
+        ///**/System.out.println("2.prr" + prr);
+      }
       bufferPos++;
       // Two symbol periods to send a byte...
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);

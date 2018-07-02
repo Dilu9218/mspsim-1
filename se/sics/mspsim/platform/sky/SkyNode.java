@@ -54,21 +54,7 @@ import se.sics.mspsim.util.ArgumentManager;
  */
 public class SkyNode extends MoteIVNode {
 
-  /* P3.4 (UART0TX) - Output: UART0TX to BackscatterTag_RX (Backscatter Tag) */
-  /* P3.5 (UART0RX) - Input: BackscatterTag_TX from Backscatter Tag */
-  //public static final int BackscatterTag_TX = 4;
-  //public static final int BackscatterTag_RX = 5;
-  
-  //protected IOPort port3;
-  
-  //private BackscatterTagRadio tag;
-  
-  //private M25P80 flash;
-  
-  //visibility changed  
   protected M25P80 flash;
-  
-  
   
   /**
    * Creates a new <code>SkyNode</code> instance.
@@ -76,10 +62,7 @@ public class SkyNode extends MoteIVNode {
    */
   public SkyNode() {
     super("Tmote Sky");
-/**/System.out.println("SkyNode");
   }
-  
-  //SkyMote skymote;
 
   public M25P80 getFlash() {
     return flash;
@@ -93,9 +76,7 @@ public class SkyNode extends MoteIVNode {
   // USART Listener
   @Override
   public void dataReceived(USARTSource source, int data) {
-/**/System.out.println(this.getID() + " - SkyNode.dataReceived");
     radio.dataReceived(source, data);
-/**/System.out.println("radioMode: " + radio.getMode());
     flash.dataReceived(source, data);
     /* if nothing selected, just write back a random byte to these devs */
     if (!radio.getChipSelect() && !flash.getChipSelect()) {
@@ -110,8 +91,6 @@ public class SkyNode extends MoteIVNode {
   
   public void setupNodePorts() {
     super.setupNodePorts();
-/**/System.out.println("SkyNode.setupNodePorts");
-    
     if (getFlash() == null) {
         setFlash(new M25P80(cpu));
     }

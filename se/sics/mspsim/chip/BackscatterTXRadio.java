@@ -74,11 +74,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   // 802.15.4 symbol period in ms
   public static final double SYMBOL_PERIOD = 0.016; // 16 us\
   
-  ArrayList<Integer> prr = new ArrayList<Integer>();
-  
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
-    /**/ System.out.println("BackscatterTXRadio: " + this.hashCode());
 
     /*
      * page 36, CC2420 datasheet
@@ -101,22 +98,19 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
   public TimeEvent sendEvent = new TimeEvent(0, "BackscatterTag Send") {
     public void execute(long t) {
-      /**/ System.out.println("sendEvents.TAGtxNext");
       txNext();
     }
   };
 
   private void txNext() {
     ongoingTransmsission = true;
-/**/System.out.println("2.ongoingTransmsission: " + ongoingTransmsission);
 
     // The length of the packet consists of the length of the payload the has
     // been calculated and the first 6 bytes which constitute the synchronization
     // header.
     int packetLength = 6 + payloadLength;
-    /**/ System.out.println("PHY packetLength: " + packetLength);
     if (bufferPos < packetLength) {
-      /**/ System.out.println("BackscatterTagRadio: " + this.hashCode() + " txNext");
+      
       /* Calculation of the CRC */
       if (bufferPos == packetLength - 2) {
         txCrc.setCRC(0);
@@ -124,50 +118,32 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
           txCrc.addBitrev(txBuffer[i]);
         }
         txBuffer[packetLength - 2] = txCrc.getCRCHi();
-        /**/ System.out.printf("txbuffer[%d] = %d\n", packetLength - 2, txBuffer[packetLength - 2]);
         txBuffer[packetLength - 1] = txCrc.getCRCLow();
-        /**/ System.out.printf("txbuffer[%d] = %d\n", packetLength - 1, txBuffer[packetLength - 1]);
       }
 
       if (rfListener != null) {
-        /**/ System.out.println("BackscatterTagRadio: " + this.hashCode() + " rfListener");
         rfListener.receivedByte((byte) (txBuffer[bufferPos] & 0xFF));
-        /**/ System.out.printf("txbuffer[%d] = %d\n", bufferPos, (byte) txBuffer[bufferPos]);
-        /**/ System.out.println(txBuffer[bufferPos] + " sent");
-        /**/ //System.out.println((char) txBuffer[bufferPos] + " sent");
-        /**/ prr.add(payloadLength);
-        ///**/System.out.println("1.prr" + prr);
-      } else {
-        ///**/ prr.add(0);
-        ///**/System.out.println("2.prr" + prr);
-      }
+      } 
+      
       bufferPos++;
       // Two symbol periods to send a byte...
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);
-      /**/ System.out.println("get here!");
     } else {
       bufferPos = 0;
       ongoingTransmsission = false;
-      /**/ System.out.println("Transmission is done!");
     }
   }
 
   public void dataReceived(USARTSource source, int data) {
-/**/System.out.println("BackscatterTXRadio: " + this.hashCode() + " dataReceived");
-    
-/**/System.out.println("startFillingTxBuffer: " + startFillingTxBuffer);
-/**/System.out.println("1.ongoingTransmsission: " + ongoingTransmsission);
-     
+
     // Send "s\n" before you start sending the packet through UART0.
     if ((data & 0xFF) == 's') {
-/**/System.out.println("s came");
       // If a packet is already being transmitted do no let 
       // another to be sent from the Mspsim.
       if(!ongoingTransmsission) {  
         nextChar = true;
       }
     } else if (((data & 0xFF) == '\n') && nextChar) {
-      /**/ System.out.println("new line came");
       nextChar = false;
       startFillingTxBuffer = true;
       return;
@@ -186,19 +162,15 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     // payload plus 1 for the detection of the new line character.
     if (startFillingTxBuffer && (payload < 126)) {
       if ((data & 0xFF) != '\n') {
-        /**/ System.out.println("data1: " + (data & 0xFF));
         if ((data & 0xFF) <= 57) {
-          /**/ System.out.println("number(0-9)");
           // Subtracting 48 from an ascii number (0-9) gives you the
           // binary representation of that number.
           intermediateValue = (data & 0xFF) - 48;
         } else if ((data & 0xFF) <= 70) {
-          /**/ System.out.println("letter(A-F)");
           // Subtracting 55 from an ascii upper case letter (A-F) gives
           // you the binary representation of that letter.
           intermediateValue = (data & 0xFF) - 55;
         } else if ((data & 0xFF) <= 102) {
-          /**/ System.out.println("letter(a-f)");
           // Subtracting 55 from an ascii lower case letter(a-f) gives
           // you the binary representation of that letter.
           intermediateValue = (data & 0xFF) - 87;
@@ -206,21 +178,15 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
         switch (state) {
         case FIRST_CHAR:
-          /**/ System.out.println("FIRST_CHAR");
           dataValue = intermediateValue << 4;
           state = UartState.SECOND_CHAR;
           break;
 
         case SECOND_CHAR:
-          /**/ System.out.println("SECOND_CHAR");
           dataValue |= intermediateValue & 0x0F;
-          /**/ System.out.println("txbufferPos = " + txbufferPos);
           txBuffer[txbufferPos++] = (dataValue & 0xFF);
-          /**/ System.out.printf("txBuffer[%d] = %d\n", txbufferPos - 1, txBuffer[txbufferPos - 1]);
           // Counts the bytes of the packet without including CRC
           payload++;
-          /**/System.out.println("payload = " + payload);
-          /**/// System.out.println("payload = " + (txbufferPos-6));
           state = UartState.FIRST_CHAR;
           break;
         }
@@ -229,10 +195,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         // The payloadLegth consists of the payload itself plus 2 bytes
         // for the CRC.
         payloadLength =  payload + 2;
-        /**/ System.out.println("data2: " + data);
         // txBuffer[5] contains the length of the PSDU(p.36 - CC2420 datasheet). 
         txBuffer[5] = (payloadLength & 0x7F);
-        /**/ System.out.println("txBuffer[5] = " + txBuffer[5]);
         
         payload = 0;
         txbufferPos = 6;
@@ -242,7 +206,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         txNext();
         
         state = UartState.FIRST_CHAR;
-/**/System.out.println("CHECK this!");
       }
     } else {
       // if the txBuffer is already full with the maximum effective payload raise a warning
@@ -250,14 +213,14 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
         System.out.println("WARNING - PACKET SIZE TOO LARGE");
         logw(WarningType.EXECUTION, "Warning - packet size too large");
       } else if (ongoingTransmsission) {
-        System.out.println("Ongoing Transmission");
+//        System.out.println("Ongoing Transmission");
         logw(WarningType.EXECUTION, "Ongoing Transmission from the tag");
       } else if(!nextChar) {
         //logw(WarningType.EXECUTION, "No data sent by Mspsim yet!!");
-        System.out.println("No data sent by Mspsim");
+//        System.out.println("No data sent by Mspsim");
       } else if (!startFillingTxBuffer) {
         //logw(WarningType.EXECUTION, "Character s came, waiting for new line character - No data sent by Mspsim yet!");
-        System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
+//        System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
       }
     }
   }
@@ -265,14 +228,12 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   /* Not used by the tag */
   @Override
   public int getConfiguration(int parameter) {
-/**/System.out.println("BackscatterTXRadio.getConfiguration");    
     return 0;
   }
 
   /* Not used by the tag */
   @Override
   public int getModeMax() {
-/**/System.out.println("BackscatterTXRadio.getModeMax");    
     return 0;
   }
 

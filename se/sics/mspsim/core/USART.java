@@ -118,7 +118,6 @@ public class USART extends IOUnit implements SFRModule, DMATrigger, USARTSource 
   private TimeEvent txTrigger = new TimeEvent(0) {
     public void execute(long t) {
         // Ready to transmit new byte!
-/**///    System.out.println("USART.TimeEvent.execute");    
         handleTransmit(t);
     }
   };
@@ -383,8 +382,6 @@ public class USART extends IOUnit implements SFRModule, DMATrigger, USARTSource 
         /* in this case we have shifted out the last character */
         USARTListener listener = this.usartListener;
         if (listener != null && txShiftReg != -1) {
-/**/        //System.out.println("USART.handleTransmit");
-/**/        //System.out.println("USART.txShiftReg2:" + txShiftReg);
             listener.dataReceived(this, txShiftReg);
         }
         /* nothing more to transmit after this - stop transmission */
@@ -395,11 +392,9 @@ public class USART extends IOUnit implements SFRModule, DMATrigger, USARTSource 
             txShiftReg = -1;
         }
     }
-/**///System.out.println("USART.nextByte1: " + nextTXByte);
     /* any more chars to transmit? */
     if (nextTXByte != -1) {
         txShiftReg = nextTXByte;
-/**///    System.out.println("USART.txShiftReg1:" + txShiftReg);
         nextTXByte = -1;
         transmitting = true;
         /* txbuf always empty after this */

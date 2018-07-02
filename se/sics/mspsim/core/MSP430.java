@@ -73,7 +73,6 @@ public class MSP430 extends MSP430Core {
    */
   public MSP430(int type, ComponentRegistry registry, MSP430Config config) {
     super(type, registry, config);
-/**/System.out.println("MSP430");
     disAsm = new DisAsm();
   }
 

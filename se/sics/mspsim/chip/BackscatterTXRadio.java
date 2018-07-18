@@ -246,5 +246,9 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   public synchronized void removeRFListener(RFListener rf) {
     rfListener = RFListener.Proxy.INSTANCE.remove(rfListener, rf);
   }
+  
+  public void receivedByte(byte c) {
+	  System.out.println("---------Yei--- byte: " + c);
+  }
 
 } /* BackscatterTXRadio */

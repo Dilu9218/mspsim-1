@@ -42,32 +42,61 @@ import se.sics.mspsim.core.EmulationLogger.WarningType;
 
 import java.util.ArrayList;
 
+import se.sics.mspsim.chip.CC2420.RadioState;
 import se.sics.mspsim.core.Chip;
 import se.sics.mspsim.core.TimeEvent;
 import se.sics.mspsim.core.USARTListener;
 import se.sics.mspsim.core.USARTSource;
 import se.sics.mspsim.core.MSP430Core;
 import se.sics.mspsim.util.CCITT_CRC;
+import se.sics.mspsim.util.Utils;
 
 public class BackscatterTXRadio extends Chip implements USARTListener, RFSource {
+	
+  // The Operation modes of the backscatter tag
+  public static final int MODE_RX_ON = 0x00;
+  public static final int MODE_TX_ON = 0x01;
+  private static final String[] MODE_NAMES = new String[] {
+   "listen", "transmit"
+  };
+  
+  // State Machine
+  public enum RadioState {
+     RX_SFD_SEARCH(3),
+     RX_FRAME(16),
+     RX_OVERFLOW(17),
+     RX_NOTIFY(18),
+     TX_DATA_TRANSFER(33),
+     TX_FRAME(37),
+     TX_UNDERFLOW(56);
+
+     private final int state;
+     RadioState(int stateNo) {
+       state = stateNo;
+     }
+
+     public int getFSMState() {
+       return state;
+     }
+  };
 
   public enum UartState {
-    FIRST_CHAR, SECOND_CHAR
+    DATA_WAIT,
+    TX_FRAME_WAIT
   }
 
   private RFListener rfListener;
-  private UartState state = UartState.FIRST_CHAR;
+  
+  private RadioState stateMachine = RadioState.TX_DATA_TRANSFER;
+  private UartState state = UartState.DATA_WAIT;
 
   private int[] txBuffer;
   private int txbufferPos = 6;
   private int bufferPos = 0;
-  private int dataValue = 0;
   private int payload = 0;
   private int payloadLength = 0;
-  private int intermediateValue = 0;
-  private boolean startFillingTxBuffer = false;
-  private boolean nextChar = false;
-  private boolean ongoingTransmsission = false;
+  private char last_char = '\0';
+  private int char_count = 0;
 
   private CCITT_CRC txCrc = new CCITT_CRC();
 
@@ -103,7 +132,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   };
 
   private void txNext() {
-    ongoingTransmsission = true;
+	  stateMachine = RadioState.TX_FRAME;
 
     // The length of the packet consists of the length of the payload the has
     // been calculated and the first 6 bytes which constitute the synchronization
@@ -130,99 +159,63 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);
     } else {
       bufferPos = 0;
-      ongoingTransmsission = false;
+      stateMachine = RadioState.TX_DATA_TRANSFER;
+      state = UartState.DATA_WAIT;
     }
   }
 
   public void dataReceived(USARTSource source, int data) {
-
-    // Send "s\n" before you start sending the packet through UART0.
-    if ((data & 0xFF) == 's') {
-      // If a packet is already being transmitted do no let 
-      // another to be sent from the Mspsim.
-      if(!ongoingTransmsission) {  
-        nextChar = true;
-      }
-    } else if (((data & 0xFF) == '\n') && nextChar) {
-      nextChar = false;
-      startFillingTxBuffer = true;
-      return;
-    }
-    
-    /*
-     * The value, written in hex, that Mspsim passes to our tag through uart0
-     * can be represented in a binary notation of 4 bits. But UART sends each
-     * value as a character occupying 8 bits. The following procedure is done in
-     * order to combine two characters sent by UART in an actual meaningful byte
-     * forming the 802.15.4 packet that our tag will finally transmit. This
-     * procedure is done when UART sends a '\n' character.
-     */
-
-    // The following statement is executed 125 times for the calculation of the 
-    // payload plus 1 for the detection of the new line character.
-    if (startFillingTxBuffer && (payload < 126)) {
-      if ((data & 0xFF) != '\n') {
-        if ((data & 0xFF) <= 57) {
-          // Subtracting 48 from an ascii number (0-9) gives you the
-          // binary representation of that number.
-          intermediateValue = (data & 0xFF) - 48;
-        } else if ((data & 0xFF) <= 70) {
-          // Subtracting 55 from an ascii upper case letter (A-F) gives
-          // you the binary representation of that letter.
-          intermediateValue = (data & 0xFF) - 55;
-        } else if ((data & 0xFF) <= 102) {
-          // Subtracting 55 from an ascii lower case letter(a-f) gives
-          // you the binary representation of that letter.
-          intermediateValue = (data & 0xFF) - 87;
-        }
-
-        switch (state) {
-        case FIRST_CHAR:
-          dataValue = intermediateValue << 4;
-          state = UartState.SECOND_CHAR;
-          break;
-
-        case SECOND_CHAR:
-          dataValue |= intermediateValue & 0x0F;
-          txBuffer[txbufferPos++] = (dataValue & 0xFF);
-          // Counts the bytes of the packet without including CRC
-          payload++;
-          state = UartState.FIRST_CHAR;
-          break;
-        }
-
-      } else {
-        // The payloadLegth consists of the payload itself plus 2 bytes
-        // for the CRC.
-        payloadLength =  payload + 2;
-        // txBuffer[5] contains the length of the PSDU(p.36 - CC2420 datasheet). 
-        txBuffer[5] = (payloadLength & 0x7F);
-        
-        payload = 0;
-        txbufferPos = 6;
-        startFillingTxBuffer = false;
-        
-        /* Transmit */
-        txNext();
-        
-        state = UartState.FIRST_CHAR;
-      }
-    } else {
-      // if the txBuffer is already full with the maximum effective payload raise a warning
-      if (payload >= 126) {
-        System.out.println("WARNING - PACKET SIZE TOO LARGE");
-        logw(WarningType.EXECUTION, "Warning - packet size too large");
-      } else if (ongoingTransmsission) {
-//        System.out.println("Ongoing Transmission");
-        logw(WarningType.EXECUTION, "Ongoing Transmission from the tag");
-      } else if(!nextChar) {
-        //logw(WarningType.EXECUTION, "No data sent by Mspsim yet!!");
-//        System.out.println("No data sent by Mspsim");
-      } else if (!startFillingTxBuffer) {
-        //logw(WarningType.EXECUTION, "Character s came, waiting for new line character - No data sent by Mspsim yet!");
-//        System.out.println("Character s came, waiting for new line character - No data sent by Mspsim yet!");
-      }
-    }
+	  if (state == UartState.DATA_WAIT) {
+		  switch (stateMachine) {
+			case TX_DATA_TRANSFER:
+				if ((data & 0xFF) == '\n') {
+					switch (last_char) {
+						case 'r':
+						case 'R':
+							break;
+						case 's':
+						case 'S':
+							break;
+							
+						default:
+							if (payload > 0) {
+								// The payloadLegth consists of the payload itself plus 2 bytes
+						        // for the CRC.
+						        payloadLength =  payload + 2;
+						        // txBuffer[5] contains the length of the PSDU(p.36 - CC2420 datasheet). 
+						        txBuffer[5] = (payloadLength & 0x7F);
+						        
+						        payload = 0;
+						        txbufferPos = 6;
+						        
+						        /* Transmit */
+						        txNext();
+						        
+						        state = UartState.TX_FRAME_WAIT;
+							}
+					}
+					last_char = '\0';
+				} else {
+					last_char = (char)(data & 0xFF);
+					int digit = Character.digit(last_char, 16);
+					if (digit != -1) { // It's a valid Hex character. Put in buffer
+						char_count++;
+						if (char_count % 2 == 0) {
+							txBuffer[txbufferPos] |= (digit & 0x0F);
+							txbufferPos++;
+							payload++;
+						} else {
+							txBuffer[txbufferPos] = digit << 4;
+						}
+						last_char = '\0';
+					} 
+				}
+				break;
+		
+			default:
+				break;
+		  }
+	  }
   }
 
   /* Not used by the tag */

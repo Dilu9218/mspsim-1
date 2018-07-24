@@ -353,6 +353,18 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   public int getModeMax() {
     return 0;
   }
+  
+  @Override
+  public int getMode() {
+	  if (stateMachine == RadioState.RX_DATA_TRANSFER ||
+			  stateMachine == RadioState.RX_FRAME || 
+			  stateMachine == RadioState.RX_OVERFLOW ||
+			  stateMachine == RadioState.RX_SFD_SEARCH) {
+		  return MODE_RX_ON;
+	  } else {
+		  return MODE_TX_ON;
+	  }
+  }
 
   @Override
   public synchronized void addRFListener(RFListener rf) {

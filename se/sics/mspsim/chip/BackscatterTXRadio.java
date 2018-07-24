@@ -41,6 +41,7 @@ package se.sics.mspsim.chip;
 import se.sics.mspsim.core.EmulationLogger.WarningType;
 
 import java.util.ArrayList;
+import java.util.Arrays; //can remove this later
 
 import se.sics.mspsim.chip.CC2420.RadioState;
 import se.sics.mspsim.core.Chip;
@@ -48,6 +49,7 @@ import se.sics.mspsim.core.TimeEvent;
 import se.sics.mspsim.core.USARTListener;
 import se.sics.mspsim.core.USARTSource;
 import se.sics.mspsim.core.MSP430Core;
+import se.sics.mspsim.core.IOPort;
 import se.sics.mspsim.util.ArrayFIFO;
 import se.sics.mspsim.util.CCITT_CRC;
 import se.sics.mspsim.util.Utils;
@@ -60,7 +62,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private static final String[] MODE_NAMES = new String[] {
    "listen", "transmit"
   };
-  
+
   // State Machine
   public enum RadioState {
      RX_SFD_SEARCH(3),
@@ -103,6 +105,29 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int zeroSymbols = 0;
   private int rxlen = 0;
   private int rxread = 0;
+  private boolean overflow = false;
+
+  private boolean shouldAck = false;
+  private boolean currentSFD;
+  private boolean currentFIFO;
+  private boolean currentFIFOP;
+
+  public static final int REG_IOCFG0        = 0x1C;
+  public static final int FIFO_POLARITY = (1<<10);
+  public static final int FIFOP_POLARITY = (1<<9);
+  public static final int SFD_POLARITY = (1<<8);
+  public static final int RAM_RXFIFO    = 0x080;
+  private int[] memory = new int[512];
+  private int[] registers = new int[64];
+
+  private IOPort fifopPort = null;
+  private int fifopPin;
+
+  private IOPort fifoPort = null;
+  private int fifoPin;
+
+  private IOPort sfdPort = null;
+  private int sfdPin;
 
   private CCITT_CRC txCrc = new CCITT_CRC();
 
@@ -111,7 +136,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
-
+    rxFIFO = new ArrayFIFO("RXFIFO", memory, RAM_RXFIFO, 128);
     /*
      * page 36, CC2420 datasheet
      * 
@@ -129,6 +154,10 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     txBuffer[4] = 0x7A;
     /* Contains the length of the PPDU. */
     txBuffer[5] = 0;
+
+    currentFIFOP = false;
+    rxFIFO.reset();
+    overflow = false;
   }
 
   public TimeEvent sendEvent = new TimeEvent(0, "BackscatterTag Send") {
@@ -318,12 +347,17 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
           }
 
       } else if(stateMachine == RadioState.RX_FRAME) {
-//          if (overflow) {
-//              /* if the CC2420 RX FIFO is in overflow - it needs a flush before receiving again */
-//          } else if(rxFIFO.isFull()) {
-//              setRxOverflow();
-//          } else {
-//              if (!frameRejected) {
+          System.out.println("rxfifo---lenght-before--overflow-------------------------------");
+          System.out.println(rxFIFO.length());
+          if (overflow) {
+              System.out.println("----------buf overflow--------------------------");
+              /* if the CC2420 RX FIFO is in overflow - it needs a flush before receiving again */
+          } else if(rxFIFO.isFull()) {
+              System.out.println("rxfifo----before--overflow-------------------------------");
+              setRxOverflow();
+              System.out.println("rxfifo---overflow-------------------------------");
+          } else {
+              System.out.println("no problem------------------------------");
                   rxFIFO.write(data);
                   if (rxread == 0) {
 //                      rxCrc.setCRC(0);
@@ -439,10 +473,61 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 //                  }
             	  setState(RadioState.RX_SFD_SEARCH);
               }
-//              }
+             }
           }
 //      }
   }
 
+    private void setSFD(boolean sfd) {
+        currentSFD = sfd;
+        if( (registers[REG_IOCFG0] & SFD_POLARITY) == SFD_POLARITY)
+            sfdPort.setPinState(sfdPin, sfd ? IOPort.PinState.LOW : IOPort.PinState.HI);
+        else
+            sfdPort.setPinState(sfdPin, sfd ? IOPort.PinState.HI : IOPort.PinState.LOW);
+        if (logLevel > INFO) log("SFD: " + sfd + "  " + cpu.cycles);
+    }
+    private void setFIFOP(boolean fifop) {
+        currentFIFOP = fifop;
+        if (logLevel > INFO) log("Setting FIFOP to " + fifop);
+        if( (registers[REG_IOCFG0] & FIFOP_POLARITY) == FIFOP_POLARITY) {
+            fifopPort.setPinState(fifopPin, fifop ? IOPort.PinState.LOW : IOPort.PinState.HI);
+        } else {
+            fifopPort.setPinState(fifopPin, fifop ? IOPort.PinState.HI : IOPort.PinState.LOW);
+        }
+    }
 
+    private void setFIFO(boolean fifo) {
+        currentFIFO = fifo;
+        if (logLevel > INFO) log("Setting FIFO to " + fifo);
+        if((registers[REG_IOCFG0] & FIFO_POLARITY) == FIFO_POLARITY) {
+            fifoPort.setPinState(fifoPin, fifo ? IOPort.PinState.LOW : IOPort.PinState.HI);
+        } else {
+            fifoPort.setPinState(fifoPin, fifo ? IOPort.PinState.HI : IOPort.PinState.LOW);
+        }
+    }
+
+    private void setRxOverflow() {
+        if (logLevel > INFO) log("RXFIFO Overflow! Read Pos: " + rxFIFO.stateToString());
+        setFIFOP(true);
+        setFIFO(false);
+        setSFD(false);
+        overflow = true;
+        shouldAck = false;
+        setState(RadioState.RX_OVERFLOW);
+    }
+
+    public void setFIFOPPort(IOPort port, int pin) {
+        fifopPort = port;
+        fifopPin = pin;
+    }
+
+    public void setFIFOPort(IOPort port, int pin) {
+        fifoPort = port;
+        fifoPin = pin;
+    }
+
+    public void setSFDPort(IOPort port, int pin) {
+        sfdPort = port;
+        sfdPin = pin;
+    }
 } /* BackscatterTXRadio */

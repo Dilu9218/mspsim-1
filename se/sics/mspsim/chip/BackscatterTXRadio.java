@@ -48,7 +48,6 @@ import se.sics.mspsim.core.TimeEvent;
 import se.sics.mspsim.core.USARTListener;
 import se.sics.mspsim.core.USARTSource;
 import se.sics.mspsim.core.MSP430Core;
-import se.sics.mspsim.core.IOPort;
 import se.sics.mspsim.util.ArrayFIFO;
 import se.sics.mspsim.util.CCITT_CRC;
 import se.sics.mspsim.util.Utils;
@@ -105,7 +104,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int rxlen = 0;
   private int rxread = 0;
   private boolean overflow = false;
-
   private int[] memory = new int[512];
 
   private CCITT_CRC txCrc = new CCITT_CRC();
@@ -300,13 +298,21 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
    * @see se.sics.mspsim.chip.RFListener#receivedByte(byte)
    */
   public void receivedByte(byte data) {
-
+      // Received a byte from the "air"
+      //      if (logLevel > INFO)
+      //        log("RF Byte received: " + Utils.hex8(data) + " state: " + stateMachine + " noZeroes: " + zeroSymbols +
+      //              ((stateMachine == RadioState.RX_SFD_SEARCH || stateMachine == RadioState.RX_FRAME) ? "" : " *** Ignored"));
+      //
       if(stateMachine == RadioState.RX_SFD_SEARCH) {
           // Look for the preamble (4 zero bytes) followed by the SFD byte 0x7A
           if(data == 0) {
               // Count zero bytes
               zeroSymbols++;
           } else if(zeroSymbols >= 4 && data == 0x7A) {
+              // If the received byte is !zero, we have counted 4 zero bytes prior to this one,
+              // and the current received byte == 0x7A (SFD), we're in sync.
+              // In RX mode, SFD goes high when the SFD is received
+              //              if (logLevel > INFO) log("RX: Preamble/SFD Synchronized.");
               setState(RadioState.RX_FRAME);
           } else {
               /* if not four zeros and 0x7A then no zeroes... */

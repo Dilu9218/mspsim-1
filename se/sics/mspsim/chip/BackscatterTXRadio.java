@@ -67,7 +67,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
      RX_SFD_SEARCH(3),
      RX_FRAME(16),
      RX_OVERFLOW(17),
-     RX_NOTIFY(18),
+     RX_DATA_TRANSFER(18),
      TX_DATA_TRANSFER(33),
      TX_FRAME(37),
      TX_UNDERFLOW(56);
@@ -93,6 +93,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private UartState state = UartState.DATA_WAIT;
 
   private ArrayFIFO rxFIFO;
+  // More than needed...
+  private int[] memory = new int[512];
   
   private int[] txBuffer;
   private int txbufferPos = 6;
@@ -105,13 +107,18 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int rxlen = 0;
   private int rxread = 0;
   private boolean overflow = false;
-
   private int[] memory = new int[512];
+  
+  private USARTSource uart = null;
+  private boolean UART_send_high_next = true;
+  private int UART_current_byte;
 
   private CCITT_CRC txCrc = new CCITT_CRC();
 
   // 802.15.4 symbol period in ms
-  public static final double SYMBOL_PERIOD = 0.016; // 16 us\
+  public static final double SYMBOL_PERIOD = 0.016; // 16 us
+  
+  public static final double UART_BYTE_DURATION = 0.1; // 100 us
   
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
@@ -143,6 +150,13 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
       txNext();
     }
   };
+  
+  public TimeEvent uartSendEvent = new TimeEvent(0, "BackscatterTag UART Send") {
+	@Override
+	public void execute(long t) {
+		uartTxNext();
+	}
+};
 
   private void txNext() {
 	  stateMachine = RadioState.TX_FRAME;
@@ -175,20 +189,48 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     }
   }
   
+  private void uartTxNext() {
+	  if (!rxFIFO.isEmpty()) {
+		  Byte tx_byte;
+		  if (UART_send_high_next) {
+			  UART_current_byte = rxFIFO.read();
+			  tx_byte = (byte) Integer.toHexString((UART_current_byte & 0xFF) >> 4).charAt(0);
+		  } else {
+			  tx_byte = (byte) Integer.toHexString((UART_current_byte & 0x0F)).charAt(0);
+		  }
+//		  System.out.println("Current_byte: " + UART_current_byte + "tx_byte: " + tx_byte);
+		  uart.byteReceived(tx_byte);
+		  cpu.scheduleTimeEventMillis(uartSendEvent, UART_BYTE_DURATION);
+		  UART_send_high_next = !UART_send_high_next;
+	  } else {
+		  uart.byteReceived('\n');
+		  uart = null;
+		  rxFIFO.reset();
+		  setState(RadioState.RX_SFD_SEARCH);
+	  }
+  }
+  
   private boolean setState(RadioState new_state) {
 	  stateMachine = new_state;
 	  
 	  switch (new_state) {
 	  case RX_SFD_SEARCH:
 		  zeroSymbols = 0;
+		  rxFIFO.reset();
 		  break;
 		  
 	  case RX_FRAME:
 		  rxlen = 0;
 		  rxread = 0;
 		  break;
+		  
+	  case RX_DATA_TRANSFER:
+		  UART_send_high_next = true;
+		  state = UartState.DATA_WAIT;
+		  break;
 		 
 	  case TX_DATA_TRANSFER:
+		  rxFIFO.reset();
 		  txbufferPos = 6;
 		  bufferPos = 0;
 		  payload = 0;
@@ -214,8 +256,9 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 						case 'R':
 							setState(RadioState.RX_SFD_SEARCH);
 							break;
-						case 's':
-						case 'S':
+						case 'q':
+						case 'Q':
+							source.byteReceived(0);
 							break;
 							
 						default:
@@ -259,6 +302,36 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 						case 'S':
 							setState(RadioState.TX_DATA_TRANSFER);
 							break;
+						case 'q':
+						case 'Q':
+							source.byteReceived(0);
+							break;
+						default:
+							break;
+					}
+					last_char = '\0';
+				} else {
+					last_char = (char)(data & 0xFF);
+				}
+				break;
+				
+			case RX_DATA_TRANSFER:
+				if ((data & 0xFF) == '\n') {
+					switch (last_char) {
+						case 's':
+						case 'S':
+							setState(RadioState.TX_DATA_TRANSFER);
+							break;
+						case 'q':
+						case 'Q':
+							if (rxFIFO.isEmpty()) {
+								source.byteReceived(0);
+							} else {
+								uart = source;
+								uartTxNext();
+							}
+							break;
+							
 						default:
 							break;
 					}
@@ -285,6 +358,18 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   public int getModeMax() {
     return 0;
   }
+  
+  @Override
+  public int getMode() {
+	  if (stateMachine == RadioState.RX_DATA_TRANSFER ||
+			  stateMachine == RadioState.RX_FRAME || 
+			  stateMachine == RadioState.RX_OVERFLOW ||
+			  stateMachine == RadioState.RX_SFD_SEARCH) {
+		  return MODE_RX_ON;
+	  } else {
+		  return MODE_TX_ON;
+	  }
+  }
 
   @Override
   public synchronized void addRFListener(RFListener rf) {
@@ -300,7 +385,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
    * @see se.sics.mspsim.chip.RFListener#receivedByte(byte)
    */
   public void receivedByte(byte data) {
-
+    
       if(stateMachine == RadioState.RX_SFD_SEARCH) {
           // Look for the preamble (4 zero bytes) followed by the SFD byte 0x7A
           if(data == 0) {
@@ -321,7 +406,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
                   rxFIFO.write(data);
                   if (rxread == 0) {
                       rxlen = data & 0xff;
-                      System.out.println("Starting to get packet. len = " + rxlen);
                   }
               if (rxread++ == rxlen) {
             	  setState(RadioState.RX_SFD_SEARCH);

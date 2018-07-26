@@ -60,7 +60,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private static final String[] MODE_NAMES = new String[] {
    "listen", "transmit"
   };
-  
+
   // State Machine
   public enum RadioState {
      RX_SFD_SEARCH(3),
@@ -105,6 +105,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int zeroSymbols = 0;
   private int rxlen = 0;
   private int rxread = 0;
+  
   private USARTSource uart = null;
   private boolean UART_send_high_next = true;
   private int UART_current_byte;
@@ -118,9 +119,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   
   public BackscatterTXRadio(MSP430Core cpu) {
     super("BackscatterTXRadio", cpu);
-    
     rxFIFO = new ArrayFIFO("RXFIFO", memory, 0, 128);
-
     /*
      * page 36, CC2420 datasheet
      * 
@@ -138,6 +137,8 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     txBuffer[4] = 0x7A;
     /* Contains the length of the PPDU. */
     txBuffer[5] = 0;
+
+    rxFIFO.reset();
   }
 
   public TimeEvent sendEvent = new TimeEvent(0, "BackscatterTag Send") {
@@ -380,14 +381,12 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
    * @see se.sics.mspsim.chip.RFListener#receivedByte(byte)
    */
   public void receivedByte(byte data) {
-//	  System.out.println("RX BYTE: " + data + " State: " + stateMachine);
-//	  System.out.println("fifo len: " + rxFIFO.length());
-      
       // Received a byte from the "air"
-//      if (logLevel > INFO)
-//        log("RF Byte received: " + Utils.hex8(data) + " state: " + stateMachine + " noZeroes: " + zeroSymbols +
-//              ((stateMachine == RadioState.RX_SFD_SEARCH || stateMachine == RadioState.RX_FRAME) ? "" : " *** Ignored"));
-//
+      //      if (logLevel > INFO)
+      //        log("RF Byte received: " + Utils.hex8(data) + " state: " + stateMachine + " noZeroes: " + zeroSymbols +
+      //              ((stateMachine == RadioState.RX_SFD_SEARCH || stateMachine == RadioState.RX_FRAME) ? "" : " *** Ignored"));
+      //
+
       if(stateMachine == RadioState.RX_SFD_SEARCH) {
           // Look for the preamble (4 zero bytes) followed by the SFD byte 0x7A
           if(data == 0) {
@@ -397,8 +396,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
               // If the received byte is !zero, we have counted 4 zero bytes prior to this one,
               // and the current received byte == 0x7A (SFD), we're in sync.
               // In RX mode, SFD goes high when the SFD is received
-//              setSFD(true);
-//              if (logLevel > INFO) log("RX: Preamble/SFD Synchronized.");
+              //              if (logLevel > INFO) log("RX: Preamble/SFD Synchronized.");
               setState(RadioState.RX_FRAME);
           } else {
               /* if not four zeros and 0x7A then no zeroes... */
@@ -406,131 +404,19 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
           }
 
       } else if(stateMachine == RadioState.RX_FRAME) {
-//          if (overflow) {
-//              /* if the CC2420 RX FIFO is in overflow - it needs a flush before receiving again */
-//          } else if(rxFIFO.isFull()) {
-//              setRxOverflow();
-//          } else {
-//              if (!frameRejected) {
+         if(rxFIFO.isFull()) {
+              rxFIFO.reset();
+              setState(RadioState.RX_SFD_SEARCH);
+          } else {
                   rxFIFO.write(data);
                   if (rxread == 0) {
-//                      rxCrc.setCRC(0);
                       rxlen = data & 0xff;
-//                      System.out.println("Starting to get packet. len = " + rxlen);
-//                      decodeAddress = addressDecode;
-//                      if (logLevel > INFO) log("RX: Start frame length " + rxlen);
-//                      // FIFO pin goes high after length byte is written to RXFIFO
-//                      setFIFO(true);
-                  } //else if (rxread < rxlen - 1) {
-//                      /* As long as we are not in the length or FCF (CRC) we count CRC */
-//                      rxCrc.addBitrev(data & 0xff);
-//                      if (rxread == 1) {
-//                          fcf0 = data & 0xff;
-//                          frameType = fcf0 & FRAME_TYPE;
-//                      } else if (rxread == 2) {
-//                          fcf1 = data & 0xff;
-//                          if (frameType == TYPE_DATA_FRAME || frameType == TYPE_CMD_FRAME) {
-//                              ackRequest = (fcf0 & ACK_REQUEST) > 0;
-//                              destinationAddressMode = (fcf1 >> 2) & 3;
-//                              /* check this !!! */
-//                              if (addressDecode && destinationAddressMode != LONG_ADDRESS &&
-//                                      destinationAddressMode != SHORT_ADDRESS) {
-//                                  rejectFrame();
-//                              }
-//                          } else if (frameType == TYPE_BEACON_FRAME ||
-//                                  frameType == TYPE_ACK_FRAME){
-//                              decodeAddress = false;
-//                              ackRequest = false;
-//                          } else if (addressDecode) {
-//                              /* illegal frame when decoding address... */
-//                              rejectFrame();
-//                          }
-//                      } else if (rxread == 3) {
-//                          // save data sequence number
-//                          dsn = data & 0xff;
-//                      } else if (decodeAddress) {
-//                          boolean flushPacket = false;
-//                          /* here we decode the address !!! */
-//                          if (destinationAddressMode == LONG_ADDRESS && rxread == 8 + 5) {
-//                              /* here we need to check that this address is correct compared to the stored address */
-//                              flushPacket = !rxFIFO.tailEquals(memory, RAM_IEEEADDR, 8);
-//                              flushPacket |= !rxFIFO.tailEquals(memory, RAM_PANID, 2, 8)
-//                                      && !rxFIFO.tailEquals(BC_ADDRESS, 0, 2, 8);
-//                              decodeAddress = false;
-//                          } else if (destinationAddressMode == SHORT_ADDRESS && rxread == 2 + 5){
-//                              /* should check short address */
-//                              flushPacket = !rxFIFO.tailEquals(BC_ADDRESS, 0, 2)
-//                                      && !rxFIFO.tailEquals(memory, RAM_SHORTADDR, 2);
-//                              flushPacket |= !rxFIFO.tailEquals(memory, RAM_PANID, 2, 2)
-//                                      && !rxFIFO.tailEquals(BC_ADDRESS, 0, 2, 2);
-//                              decodeAddress = false;
-//                          }
-//                          if (flushPacket) {
-//                              rejectFrame();
-//                          }
-//                      }
-//                  }
-//
-//                  /* In RX mode, FIFOP goes high when the size of the first enqueued packet exceeds
-//                   * the programmable threshold and address recognition isn't ongoing */ 
-//                  if (currentFIFOP == false
-//                          && rxFIFO.length() <= rxlen + 1
-//                          && !decodeAddress && !frameRejected
-//                          && rxFIFO.length() > fifopThr) {
-//                      setFIFOP(true);
-//                      if (logLevel > INFO) log("RX: FIFOP Threshold reached - setting FIFOP");
-//                  }
-//              }
-//
+                  }
               if (rxread++ == rxlen) {
-//                  if (frameRejected) {
-//                      if (logLevel > INFO) log("Frame rejected - setting SFD to false and RXWAIT\n");
-//                      setSFD(false);
-//                      setState(RadioState.RX_WAIT);
-//                      return;
-//                  }
-//                  // In RX mode, FIFOP goes high, if threshold is higher than frame length....
-//
-//                  // Here we check the CRC of the packet!
-//                  //System.out.println("Reading from " + ((rxfifoWritePos + 128 - 2) & 127));
-//                  int crc = rxFIFO.get(-2) << 8;
-//                  crc += rxFIFO.get(-1); //memory[RAM_RXFIFO + ((rxfifoWritePos + 128 - 1) & 127)];
-//
-//                  crcOk = crc == rxCrc.getCRCBitrev();
-//                  if (logLevel > INFO && !crcOk) {
-//                      log("CRC not OK: recv:" + Utils.hex16(crc) + " calc: " + Utils.hex16(rxCrc.getCRCBitrev()));
-//                  }
-//                  // Should take a RSSI value as input or use a set-RSSI value...
-//                  rxFIFO.set(-2, registers[REG_RSSI] & 0xff); 
-//                  rxFIFO.set(-1, (corrval & 0x7F) | (crcOk ? 0x80 : 0));
-//                  //          memory[RAM_RXFIFO + ((rxfifoWritePos + 128 - 2) & 127)] = ;
-//                  //          // Set CRC ok and add a correlation - TODO: fix better correlation value!!!
-//                  //          memory[RAM_RXFIFO + ((rxfifoWritePos + 128 - 1) & 127)] = 37 |
-//                  //              (crcOk ? 0x80 : 0);
-//
-//                  /* set FIFOP only if this is the first received packet - e.g. if rxfifoLen is at most rxlen + 1
-//                   * TODO: check what happens when rxfifoLen < rxlen - e.g we have been reading before FIFOP */
-//                  if (rxFIFO.length() <= rxlen + 1) {
-//                      setFIFOP(true);
-//                  } else {
-//                      if (logLevel > INFO) log("Did not set FIFOP rxfifoLen: " + rxFIFO.length() + " rxlen: " + rxlen);
-//                  }
-//                  setSFD(false);
-//                  if (logLevel > INFO) log("RX: Complete: packetStart: " + rxFIFO.stateToString());
-//
-//                  /* if either manual ack request (shouldAck) or autoack + ACK_REQ on package do ack! */
-//                  /* Autoack-mode + good CRC => autoack */
-//                  if (((autoAck && ackRequest) || shouldAck) && crcOk) {
-//                      setState(RadioState.TX_ACK_CALIBRATE);
-//                  } else {
-//                      setState(RadioState.RX_WAIT);
-//                  }
-            	  setState(RadioState.RX_DATA_TRANSFER);
+				  setState(RadioState.RX_DATA_TRANSFER);
               }
-//              }
+             }
           }
-//      }
   }
-
 
 } /* BackscatterTXRadio */

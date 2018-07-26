@@ -105,7 +105,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int zeroSymbols = 0;
   private int rxlen = 0;
   private int rxread = 0;
-  private boolean overflow = false;
   private int[] memory = new int[512];
   
   private USARTSource uart = null;
@@ -141,7 +140,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     txBuffer[5] = 0;
 
     rxFIFO.reset();
-    overflow = false;
   }
 
   public TimeEvent sendEvent = new TimeEvent(0, "BackscatterTag Send") {
@@ -416,7 +414,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
                       rxlen = data & 0xff;
                   }
               if (rxread++ == rxlen) {
-            	  setState(RadioState.RX_SFD_SEARCH);
+				  setState(RadioState.RX_DATA_TRANSFER);
               }
              }
           }

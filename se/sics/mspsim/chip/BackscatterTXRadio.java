@@ -105,7 +105,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   private int zeroSymbols = 0;
   private int rxlen = 0;
   private int rxread = 0;
-  private int[] memory = new int[512];
   
   private USARTSource uart = null;
   private boolean UART_send_high_next = true;

@@ -55,21 +55,21 @@ import se.sics.mspsim.util.Utils;
 public class BackscatterTXRadio extends Chip implements USARTListener, RFSource {
 	
   // The Operation modes of the backscatter tag
-  public static final int MODE_RX_ON = 0x00;
-  public static final int MODE_TX_ON = 0x01;
+  public static final int MODE_TXRX_OFF = 0x00;
+  public static final int MODE_RX_ON = 0x01;
+  public static final int MODE_TX_ON = 0x02;
   private static final String[] MODE_NAMES = new String[] {
-   "listen", "transmit"
+   "off", "listen", "transmit"
   };
   
   // State Machine
   public enum RadioState {
+     IDLE(1),
      RX_SFD_SEARCH(3),
      RX_FRAME(16),
-     RX_OVERFLOW(17),
      RX_DATA_TRANSFER(18),
      TX_DATA_TRANSFER(33),
-     TX_FRAME(37),
-     TX_UNDERFLOW(56);
+     TX_FRAME(37);
 
      private final int state;
      RadioState(int stateNo) {
@@ -88,7 +88,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
   private RFListener rfListener;
   
-  private RadioState stateMachine = RadioState.TX_DATA_TRANSFER;
+  private RadioState stateMachine = RadioState.IDLE;
   private UartState state = UartState.DATA_WAIT;
 
   private ArrayFIFO rxFIFO;
@@ -180,6 +180,9 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
       // Two symbol periods to send a byte...
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);
     } else {
+    	if (uart != null) {
+    		uart.byteReceived('k');
+    	}
     	setState(RadioState.TX_DATA_TRANSFER);
     }
   }
@@ -193,13 +196,13 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 		  } else {
 			  tx_byte = (byte) Integer.toHexString((UART_current_byte & 0x0F)).charAt(0);
 		  }
-//		  System.out.println("Current_byte: " + UART_current_byte + "tx_byte: " + tx_byte);
+		  System.out.println("Current_byte: " + UART_current_byte + "tx_byte: " + tx_byte);
 		  uart.byteReceived(tx_byte);
 		  cpu.scheduleTimeEventMillis(uartSendEvent, UART_BYTE_DURATION);
 		  UART_send_high_next = !UART_send_high_next;
 	  } else {
 		  uart.byteReceived('\n');
-		  uart = null;
+//		  uart = null;
 		  rxFIFO.reset();
 		  setState(RadioState.RX_SFD_SEARCH);
 	  }
@@ -207,8 +210,11 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   
   private boolean setState(RadioState new_state) {
 	  stateMachine = new_state;
+	  System.out.println("Setting state: " + new_state);
 	  
 	  switch (new_state) {
+	  case IDLE:
+		  break;
 	  case RX_SFD_SEARCH:
 		  zeroSymbols = 0;
 		  rxFIFO.reset();
@@ -242,8 +248,38 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   }
 
   public void dataReceived(USARTSource source, int data) {
+	  uart = source;
+	  System.out.println("Data received " + data);
 	  if (state == UartState.DATA_WAIT) {
 		  switch (stateMachine) {
+		  	case IDLE:
+				if ((data & 0xFF) == '\n') {
+					switch (last_char) {
+						case 'r':
+						case 'R':
+							setState(RadioState.RX_SFD_SEARCH);
+							break;
+						case 's':
+						case 'S':
+							setState(RadioState.TX_DATA_TRANSFER);
+							break;
+						case 'q':
+						case 'Q':
+							source.byteReceived(0);
+							break;
+						case 'o':
+						case 'O':
+							setState(RadioState.IDLE);
+							break;
+							
+						default:
+							break;
+					}
+					last_char = '\0';
+				} else {
+					last_char = (char)(data & 0xFF);
+				}
+		  		break;
 			case TX_DATA_TRANSFER:
 				if ((data & 0xFF) == '\n') {
 					switch (last_char) {
@@ -254,6 +290,10 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 						case 'q':
 						case 'Q':
 							source.byteReceived(0);
+							break;
+						case 'o':
+						case 'O':
+							setState(RadioState.IDLE);
 							break;
 							
 						default:
@@ -268,6 +308,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 						        txbufferPos = 6;
 						        
 						        /* Transmit */
+//						        rxFIFO.read(); // Drop the length byte from the FIFO
 						        txNext();
 						        state = UartState.TX_FRAME_WAIT;
 							}
@@ -301,6 +342,11 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 						case 'Q':
 							source.byteReceived(0);
 							break;
+						case 'o':
+						case 'O':
+							setState(RadioState.IDLE);
+							break;
+							
 						default:
 							break;
 					}
@@ -322,9 +368,13 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 							if (rxFIFO.isEmpty()) {
 								source.byteReceived(0);
 							} else {
-								uart = source;
+//								uart = source;
 								uartTxNext();
 							}
+							break;
+						case 'o':
+						case 'O':
+							setState(RadioState.IDLE);
 							break;
 							
 						default:
@@ -356,9 +406,10 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   
   @Override
   public int getMode() {
-	  if (stateMachine == RadioState.RX_DATA_TRANSFER ||
+	  if (stateMachine == RadioState.IDLE) {
+		  return MODE_TXRX_OFF;
+	  } else if (stateMachine == RadioState.RX_DATA_TRANSFER ||
 			  stateMachine == RadioState.RX_FRAME || 
-			  stateMachine == RadioState.RX_OVERFLOW ||
 			  stateMachine == RadioState.RX_SFD_SEARCH) {
 		  return MODE_RX_ON;
 	  } else {
@@ -416,6 +467,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
                   if (rxread == 0) {
 //                      rxCrc.setCRC(0);
                       rxlen = data & 0xff;
+                      rxFIFO.read();
 //                      System.out.println("Starting to get packet. len = " + rxlen);
 //                      decodeAddress = addressDecode;
 //                      if (logLevel > INFO) log("RX: Start frame length " + rxlen);
@@ -526,6 +578,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 //                      setState(RadioState.RX_WAIT);
 //                  }
             	  setState(RadioState.RX_DATA_TRANSFER);
+            	  uartTxNext();
               }
 //              }
           }

@@ -44,6 +44,7 @@ import java.util.ArrayList;
 
 import se.sics.mspsim.chip.CC2420.RadioState;
 import se.sics.mspsim.core.Chip;
+import se.sics.mspsim.core.IOPort;
 import se.sics.mspsim.core.TimeEvent;
 import se.sics.mspsim.core.USARTListener;
 import se.sics.mspsim.core.USARTSource;
@@ -53,6 +54,20 @@ import se.sics.mspsim.util.CCITT_CRC;
 import se.sics.mspsim.util.Utils;
 
 public class BackscatterTXRadio extends Chip implements USARTListener, RFSource {
+  private IOPort sfdPort = null;
+  private int sfdPin;
+  private boolean currentSFD;
+  
+  private void setSFD(boolean sfd) {
+    currentSFD = sfd;
+    sfdPort.setPinState(sfdPin, sfd ? IOPort.PinState.HI : IOPort.PinState.LOW);
+    if (logLevel > INFO) log("SFD: " + sfd + "  " + cpu.cycles);
+  }
+  
+  public void setSFDPort(IOPort port, int pin) {
+	    sfdPort = port;
+	    sfdPin = pin;
+  }
 	
   // The Operation modes of the backscatter tag
   public static final int MODE_TXRX_OFF = 0x00;
@@ -209,6 +224,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 		  uart.byteReceived('\n');
 //		  uart = null;
 		  rxFIFO.reset();
+		  setSFD(false);
 		  setState(RadioState.RX_SFD_SEARCH);
 	  }
   }
@@ -453,10 +469,12 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
               // and the current received byte == 0x7A (SFD), we're in sync.
               // In RX mode, SFD goes high when the SFD is received
               //              if (logLevel > INFO) log("RX: Preamble/SFD Synchronized.");
+        	  setSFD(true); 
               setState(RadioState.RX_FRAME);
           } else {
               /* if not four zeros and 0x7A then no zeroes... */
               zeroSymbols = 0;
+        	  setSFD(false); 
           }
 
       } else if(stateMachine == RadioState.RX_FRAME) {

@@ -1,6 +1,7 @@
 package se.sics.mspsim.platform.sky;
 
 import se.sics.mspsim.chip.BackscatterTXRadio;
+import se.sics.mspsim.core.IOPort;
 import se.sics.mspsim.core.USARTSource;
 
 public class BackscatterTagNode extends SkyNode {
@@ -25,7 +26,7 @@ public class BackscatterTagNode extends SkyNode {
     
     if(radio.getChipSelect()) {
       /* CC2420 in not selected whenever in Contiki code UART0 "sends" to the tag */
-      radio.dataReceived(source, data);  
+      radio.dataReceived(source, data);
     } else {
       tagSelected = true;
       tag.dataReceived(source, data);
@@ -43,6 +44,11 @@ public class BackscatterTagNode extends SkyNode {
       
     /* Creation of the Backscatter TX Radio module */
     tag = new BackscatterTXRadio(cpu);
+    
+    port4 = cpu.getIOUnit(IOPort.class, "P4");
+    port4.addPortListener(this);
+    tag.setSFDPort(port4, CC2420_SFD);
+    
   }
   
     

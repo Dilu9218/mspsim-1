@@ -392,7 +392,6 @@ public class USART extends IOUnit implements SFRModule, DMATrigger, USARTSource 
             txShiftReg = -1;
         }
     }
-
     /* any more chars to transmit? */
     if (nextTXByte != -1) {
         txShiftReg = nextTXByte;

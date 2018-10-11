@@ -135,7 +135,6 @@ public class MSP430Core extends Chip implements MSP430Constants {
 
   public MSP430Core(int type, ComponentRegistry registry, MSP430Config config) {
     super("MSP430", "MSP430 Core", null);
-
     logger = registry.getComponent(EmulationLogger.class);
     if (logger == null) {
         logger = new DefaultEmulationLogger(this, System.out);
@@ -706,7 +705,7 @@ public class MSP430Core extends Chip implements MSP430Constants {
    * @param time
    */
   public long scheduleTimeEventMillis(TimeEvent event, double msec) {
-      /*    System.out.println("MAX_DCO " + bcs.getMaxDCOFrequency());*/
+    /*    System.out.println("MAX_DCO " + bcs.getMaxDCOFrequency());*/
     long time = (long) (getTime() + msec / 1000 * bcs.getMaxDCOFrequency());
 //    System.out.println("Scheduling at: " + time + " (" + msec + ") getTime: " + getTime());
     scheduleTimeEvent(event, time);

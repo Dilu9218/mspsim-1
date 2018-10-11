@@ -60,7 +60,7 @@
       <arg line="${ARGS}"/>
     </java>
   </target>
-
+	
   <target name="runskyprof" depends="jar" description="run MSPSim with platform Sky for profiling">
     <property name="FIRMWAREFILE" value="firmware/sky/blink.sky"/>
     <java fork="true" classpath="${jarfile}" classname="se.sics.mspsim.platform.sky.SkyNode">
@@ -69,7 +69,7 @@
       <arg line="${ARGS}"/>
     </java>
   </target>
-
+	
   <target name="runtelos" depends="jar" description="run MSPSim with platform Telos">
     <property name="FIRMWAREFILE" value="firmware/sky/blink.sky"/>
     <java fork="true" classpath="${jarfile}" classname="se.sics.mspsim.platform.sky.TelosNode">

@@ -47,13 +47,15 @@ import se.sics.mspsim.core.IOPort;
 import se.sics.mspsim.core.USARTSource;
 import se.sics.mspsim.util.ArgumentManager;
 
+//import org.contikios.cooja.mspmote.SkyMote;
+
 /**
  * Emulation of Sky Mote
  */
 public class SkyNode extends MoteIVNode {
 
-  private M25P80 flash;
-
+  protected M25P80 flash;
+  
   /**
    * Creates a new <code>SkyNode</code> instance.
    *
@@ -72,6 +74,7 @@ public class SkyNode extends MoteIVNode {
   }
 
   // USART Listener
+  @Override
   public void dataReceived(USARTSource source, int data) {
     radio.dataReceived(source, data);
     flash.dataReceived(source, data);
@@ -95,6 +98,8 @@ public class SkyNode extends MoteIVNode {
         getFlash().setStorage(new FileStorage(flashFile));
     }
   }
+  
+  
 
   public static void main(String[] args) throws IOException {
     SkyNode node = new SkyNode();
@@ -102,5 +107,6 @@ public class SkyNode extends MoteIVNode {
     config.handleArguments(args);
     node.setupArgs(config);
   }
+
 
 }

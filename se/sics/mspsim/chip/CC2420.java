@@ -48,6 +48,7 @@ import se.sics.mspsim.util.CCITT_CRC;
 import se.sics.mspsim.util.Utils;
 
 public class CC2420 extends Radio802154 implements USARTListener {
+  
 
   public enum Reg {
     SNOP, SXOSCON, STXCAL, SRXON, /* 0x00 */
@@ -74,65 +75,65 @@ public class CC2420 extends Radio802154 implements USARTListener {
   };
 
 
-  public static final int REG_SNOP		= 0x00;
-  public static final int REG_SXOSCON	        = 0x01;
-  public static final int REG_STXCAL		= 0x02;
-  public static final int REG_SRXON		= 0x03;
-  public static final int REG_STXON		= 0x04;
-  public static final int REG_STXONCCA	        = 0x05;
-  public static final int REG_SRFOFF		= 0x06;
-  public static final int REG_SXOSCOFF	        = 0x07;
-  public static final int REG_SFLUSHRX	        = 0x08;
-  public static final int REG_SFLUSHTX	        = 0x09;
-  public static final int REG_SACK		= 0x0A;
-  public static final int REG_SACKPEND	        = 0x0B;
-  public static final int REG_SRXDEC		= 0x0C;
-  public static final int REG_STXENC		= 0x0D;
-  public static final int REG_SAES		= 0x0E;
-  public static final int REG_foo		= 0x0F;
-  public static final int REG_MAIN		= 0x10;
-  public static final int REG_MDMCTRL0	        = 0x11;
-  public static final int REG_MDMCTRL1	        = 0x12;
-  public static final int REG_RSSI		= 0x13;
-  public static final int REG_SYNCWORD	        = 0x14;
-  public static final int REG_TXCTRL		= 0x15;
-  public static final int REG_RXCTRL0	        = 0x16;
-  public static final int REG_RXCTRL1	        = 0x17;
-  public static final int REG_FSCTRL		= 0x18;
-  public static final int REG_SECCTRL0	        = 0x19;
-  public static final int REG_SECCTRL1       	= 0x1A;
-  public static final int REG_BATTMON   	= 0x1B;
-  public static final int REG_IOCFG0		= 0x1C;
-  public static final int REG_IOCFG1		= 0x1D;
-  public static final int REG_MANFIDL   	= 0x1E;
-  public static final int REG_MANFIDH   	= 0x1F;
-  public static final int REG_FSMTC		= 0x20;
-  public static final int REG_MANAND		= 0x21;
-  public static final int REG_MANOR		= 0x22;
-  public static final int REG_AGCCTRL    	= 0x23;
-  public static final int REG_AGCTST0   	= 0x24;
-  public static final int REG_AGCTST1   	= 0x25;
-  public static final int REG_AGCTST2   	= 0x26;
-  public static final int REG_FSTST0		= 0x27;
-  public static final int REG_FSTST1		= 0x28;
-  public static final int REG_FSTST2		= 0x29;
-  public static final int REG_FSTST3		= 0x2A;
-  public static final int REG_RXBPFTST    	= 0x2B;
-  public static final int REG_FSMSTATE   	= 0x2C;
-  public static final int REG_ADCTST		= 0x2D;
-  public static final int REG_DACTST		= 0x2E;
-  public static final int REG_TOPTST		= 0x2F;
-  public static final int REG_RESERVED   	= 0x30;
+  public static final int REG_SNOP      = 0x00;
+  public static final int REG_SXOSCON           = 0x01;
+  public static final int REG_STXCAL        = 0x02;
+  public static final int REG_SRXON     = 0x03;
+  public static final int REG_STXON     = 0x04;
+  public static final int REG_STXONCCA          = 0x05;
+  public static final int REG_SRFOFF        = 0x06;
+  public static final int REG_SXOSCOFF          = 0x07;
+  public static final int REG_SFLUSHRX          = 0x08;
+  public static final int REG_SFLUSHTX          = 0x09;
+  public static final int REG_SACK      = 0x0A;
+  public static final int REG_SACKPEND          = 0x0B;
+  public static final int REG_SRXDEC        = 0x0C;
+  public static final int REG_STXENC        = 0x0D;
+  public static final int REG_SAES      = 0x0E;
+  public static final int REG_foo       = 0x0F;
+  public static final int REG_MAIN      = 0x10;
+  public static final int REG_MDMCTRL0          = 0x11;
+  public static final int REG_MDMCTRL1          = 0x12;
+  public static final int REG_RSSI      = 0x13;
+  public static final int REG_SYNCWORD          = 0x14;
+  public static final int REG_TXCTRL        = 0x15;
+  public static final int REG_RXCTRL0           = 0x16;
+  public static final int REG_RXCTRL1           = 0x17;
+  public static final int REG_FSCTRL        = 0x18;
+  public static final int REG_SECCTRL0          = 0x19;
+  public static final int REG_SECCTRL1          = 0x1A;
+  public static final int REG_BATTMON       = 0x1B;
+  public static final int REG_IOCFG0        = 0x1C;
+  public static final int REG_IOCFG1        = 0x1D;
+  public static final int REG_MANFIDL       = 0x1E;
+  public static final int REG_MANFIDH       = 0x1F;
+  public static final int REG_FSMTC     = 0x20;
+  public static final int REG_MANAND        = 0x21;
+  public static final int REG_MANOR     = 0x22;
+  public static final int REG_AGCCTRL       = 0x23;
+  public static final int REG_AGCTST0       = 0x24;
+  public static final int REG_AGCTST1       = 0x25;
+  public static final int REG_AGCTST2       = 0x26;
+  public static final int REG_FSTST0        = 0x27;
+  public static final int REG_FSTST1        = 0x28;
+  public static final int REG_FSTST2        = 0x29;
+  public static final int REG_FSTST3        = 0x2A;
+  public static final int REG_RXBPFTST      = 0x2B;
+  public static final int REG_FSMSTATE      = 0x2C;
+  public static final int REG_ADCTST        = 0x2D;
+  public static final int REG_DACTST        = 0x2E;
+  public static final int REG_TOPTST        = 0x2F;
+  public static final int REG_RESERVED      = 0x30;
   /* 0x31 - 0x3D not used */
-  public static final int REG_TXFIFO		= 0x3E;
-  public static final int REG_RXFIFO		= 0x3F;
+  public static final int REG_TXFIFO        = 0x3E;
+  public static final int REG_RXFIFO        = 0x3F;
 
   public static final int STATUS_XOSC16M_STABLE = 1 << 6;
   public static final int STATUS_TX_UNDERFLOW   = 1 << 5;
-  public static final int STATUS_ENC_BUSY	    = 1 << 4;
-  public static final int STATUS_TX_ACTIVE	= 1 << 3;
-  public static final int STATUS_LOCK	= 1 << 2;
-  public static final int STATUS_RSSI_VALID	= 1 << 1;
+  public static final int STATUS_ENC_BUSY       = 1 << 4;
+  public static final int STATUS_TX_ACTIVE  = 1 << 3;
+  public static final int STATUS_LOCK   = 1 << 2;
+  public static final int STATUS_RSSI_VALID = 1 << 1;
 
   // IOCFG0 Register Bit masks
   public static final int BCN_ACCEPT = (1<<11);
@@ -157,18 +158,24 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public static final int AUTOACK = (1 << 4);
   public static final int PREAMBLE_LENGTH = 0x0f;
   
+  // MDMCTRO1 values
+  public static final int TX_MODE = (3 << 2);
+  
+  //DACTST values
+  public static final int DAC_SRC = (7 << 12);
+ 
   // RAM Addresses
-  public static final int RAM_TXFIFO	= 0x000;
-  public static final int RAM_RXFIFO	= 0x080;
-  public static final int RAM_KEY0	= 0x100;
-  public static final int RAM_RXNONCE	= 0x110;
-  public static final int RAM_SABUF	= 0x120;
-  public static final int RAM_KEY1	= 0x130;
-  public static final int RAM_TXNONCE	= 0x140;
-  public static final int RAM_CBCSTATE	= 0x150;
-  public static final int RAM_IEEEADDR	= 0x160;
-  public static final int RAM_PANID	= 0x168;
-  public static final int RAM_SHORTADDR	= 0x16A;
+  public static final int RAM_TXFIFO    = 0x000;
+  public static final int RAM_RXFIFO    = 0x080;
+  public static final int RAM_KEY0  = 0x100;
+  public static final int RAM_RXNONCE   = 0x110;
+  public static final int RAM_SABUF = 0x120;
+  public static final int RAM_KEY1  = 0x130;
+  public static final int RAM_TXNONCE   = 0x140;
+  public static final int RAM_CBCSTATE  = 0x150;
+  public static final int RAM_IEEEADDR  = 0x160;
+  public static final int RAM_PANID = 0x168;
+  public static final int RAM_SHORTADDR = 0x16A;
 
   public static final int SHORT_ADDRESS = 2;
   public static final int LONG_ADDRESS = 3;
@@ -179,9 +186,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public static final int MODE_RX_ON = 0x01;
   public static final int MODE_TXRX_ON = 0x02;
   public static final int MODE_POWER_OFF = 0x03;
-  public static final int MODE_MAX = MODE_POWER_OFF;
+  public static final int MODE_TEST_CARRIER_ON = 0x04;
+  public static final int MODE_MAX = MODE_TEST_CARRIER_ON;
   private static final String[] MODE_NAMES = new String[] {
-    "off", "listen", "transmit", "power_off"
+    "off", "listen", "transmit", "power_off", "carrier_test"
   };
 
   // State Machine - Datasheet Figure 25 page 44
@@ -200,7 +208,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_CALIBRATE(48),
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
-     TX_UNDERFLOW(56);
+     TX_UNDERFLOW(56),
+     CARRIER_TEST(32);
 
      private final int state;
      RadioState(int stateNo) {
@@ -251,13 +260,13 @@ public class CC2420 extends Radio802154 implements USARTListener {
   private int usartDataValue;
   private int shrPos;
   private int txfifoPos;
-  private boolean txfifoFlush;	// TXFIFO is automatically flushed on next write
+  private boolean txfifoFlush;  // TXFIFO is automatically flushed on next write
   private int rxfifoReadLeft; // number of bytes left to read from current packet
   private int rxlen;
   private int rxread;
   private int zeroSymbols;
   private boolean ramRead = false;
-
+  
   /* RSSI is an externally set value of the RSSI for this CC2420 */
   /* low RSSI => CCA = true in normal mode */
 
@@ -415,7 +424,6 @@ public class CC2420 extends Radio802154 implements USARTListener {
   public CC2420(MSP430Core cpu) {
       super("CC2420", "Radio", cpu);
       rxFIFO = new ArrayFIFO("RXFIFO", memory, RAM_RXFIFO, 128);
-      
     registers[REG_SNOP] = 0;
     registers[REG_TXCTRL] = 0xa0ff;
     setModeNames(MODE_NAMES);
@@ -428,6 +436,9 @@ public class CC2420 extends Radio802154 implements USARTListener {
   
   private void reset() {
       setReg(REG_MDMCTRL0, 0x0ae2);
+      // Reset the registers concerning the unmodulated carrier
+      setReg(REG_MDMCTRL1, 0x0500);
+      setReg(REG_DACTST, 0x0000);
       registers[REG_RSSI] =  0xE000 | (registers[REG_RSSI]  & 0xFF);
   }
   
@@ -438,7 +449,6 @@ public class CC2420 extends Radio802154 implements USARTListener {
     registers[REG_FSMSTATE] = state.getFSMState();
 
     switch(stateMachine) {
-
     case VREG_OFF:
       if (logLevel > INFO) log("VREG Off.");
       flushRX();
@@ -470,7 +480,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
       if ((status & STATUS_RSSI_VALID) == 0) {
           setSymbolEvent(8);
       }
-//      status |= STATUS_RSSI_VALID;
+      //status |= STATUS_RSSI_VALID;
       updateCCA();
       setMode(MODE_RX_ON);
       break;
@@ -512,36 +522,39 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
       
     case TX_ACK_CALIBRATE:
-        /* TX active during ACK + NOTE: we ignore the SFD when receiving full packets so
-         * we need to add another extra 2 symbols here to get a correct timing */
-        status |= STATUS_TX_ACTIVE;
-        setSymbolEvent(12 + 2 + 2);
-        setMode(MODE_TXRX_ON);
+      /* TX active during ACK + NOTE: we ignore the SFD when receiving full packets so
+       * we need to add another extra 2 symbols here to get a correct timing */
+      status |= STATUS_TX_ACTIVE;
+      setSymbolEvent(12 + 2 + 2);
+      setMode(MODE_TXRX_ON);
       break;
     case TX_ACK_PREAMBLE:
-        /* same as normal preamble ?? */
-        shrPos = 0;
-        SHR[0] = 0;
-        SHR[1] = 0;
-        SHR[2] = 0;
-        SHR[3] = 0;
-        SHR[4] = 0x7A;
-        shrNext();
-        break;
+      /* same as normal preamble ?? */
+      shrPos = 0;
+      SHR[0] = 0;
+      SHR[1] = 0;
+      SHR[2] = 0;
+      SHR[3] = 0;
+      SHR[4] = 0x7A;
+      shrNext();
+      break;
     case TX_ACK:
-        ackPos = 0;
-        // Reset CRC ok flag to disable software acknowledgments until next received packet 
-        crcOk = false;
-        ackNext();
-        break;
+      ackPos = 0;
+      // Reset CRC ok flag to disable software acknowledgments until next received packet 
+      crcOk = false;
+      ackNext();
+      break;
     case RX_FRAME:
-        /* mark position of frame start - for rejecting when address is wrong */
-        rxFIFO.mark();
-        rxread = 0;
-        frameRejected = false;
-        shouldAck = false;
-        crcOk = false;
-        break;
+      /* mark position of frame start - for rejecting when address is wrong */
+      rxFIFO.mark();
+      rxread = 0;
+      frameRejected = false;
+      shouldAck = false;
+      crcOk = false;
+      break;
+    case CARRIER_TEST:
+      setMode(MODE_TEST_CARRIER_ON);
+      break;
     }
 
     /* Notify state listener */
@@ -569,8 +582,8 @@ public class CC2420 extends Radio802154 implements USARTListener {
    * @see se.sics.mspsim.chip.RFListener#receivedByte(byte)
    */
   public void receivedByte(byte data) {
+      
       // Received a byte from the "air"
-
       if (logLevel > INFO)
         log("RF Byte received: " + Utils.hex8(data) + " state: " + stateMachine + " noZeroes: " + zeroSymbols +
               ((stateMachine == RadioState.RX_SFD_SEARCH || stateMachine == RadioState.RX_FRAME) ? "" : " *** Ignored"));
@@ -761,6 +774,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
           }
           break;
       }
+              
       }
       configurationChanged(address, oldValue, data);
   }
@@ -975,11 +989,14 @@ public class CC2420 extends Radio802154 implements USARTListener {
         log("Strobe RXTX-OFF!!! at " + cpu.cycles);
         if (stateMachine == RadioState.TX_ACK ||
               stateMachine == RadioState.TX_FRAME ||
-              stateMachine == RadioState.RX_FRAME) {
+              stateMachine == RadioState.RX_FRAME || 
+              stateMachine == RadioState.CARRIER_TEST) {
           log("WARNING: turning off RXTX during " + stateMachine);
         }
       }
+      
       setState(RadioState.IDLE);
+      
       break;
     case REG_STXON:
       // State transition valid from IDLE state or all RX states
@@ -989,11 +1006,20 @@ public class CC2420 extends Radio802154 implements USARTListener {
           (stateMachine == RadioState.RX_FRAME) ||
           (stateMachine == RadioState.RX_OVERFLOW) ||
           (stateMachine == RadioState.RX_WAIT)) {
+          
         status |= STATUS_TX_ACTIVE;
-        setState(RadioState.TX_CALIBRATE);
+        
+        // Check REG_MDMCTRL1 and REG_DACTST registers to see if it transmits a carrier
+        if( (((registers[REG_MDMCTRL1] & TX_MODE) >> 2) > 1) && (((registers[REG_DACTST] & DAC_SRC) >> 12) == 1) ) {
+            setState(RadioState.CARRIER_TEST);
+        } else {
+            setState(RadioState.TX_CALIBRATE);
+        }
+        
         if (sendEvents) {
           sendEvent("STXON", null);
         }
+        
         // Starting up TX subsystem - indicate that we are in TX mode!
         if (logLevel > INFO) log("Strobe STXON - transmit on! at " + cpu.cycles);
       }
@@ -1037,14 +1063,14 @@ public class CC2420 extends Radio802154 implements USARTListener {
       break;
     case REG_SACK:
     case REG_SACKPEND:
-        // Set the frame pending flag for all future autoack based on SACK/SACKPEND
-        ackFramePending = data == REG_SACKPEND;
-        if (stateMachine == RadioState.RX_FRAME) {
-            shouldAck = true;
-        } else if (crcOk) {
-            setState(RadioState.TX_ACK_CALIBRATE);
-        }
-        break;
+      // Set the frame pending flag for all future autoack based on SACK/SACKPEND
+      ackFramePending = data == REG_SACKPEND;
+      if (stateMachine == RadioState.RX_FRAME) {
+        shouldAck = true;
+      } else if (crcOk) {
+        setState(RadioState.TX_ACK_CALIBRATE);
+      }
+      break;
     default:
       if (logLevel > INFO) {
         log("Unknown strobe command: " + data);
@@ -1095,6 +1121,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
         if (logLevel > INFO) log("transmitting byte: " + Utils.hex8(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
         rfListener.receivedByte((byte)(memory[RAM_TXFIFO + (txfifoPos & 0x7f)] & 0xFF));
       }
+      
       txfifoPos++;
       // Two symbol periods to send a byte...
       cpu.scheduleTimeEventMillis(sendEvent, SYMBOL_PERIOD * 2);

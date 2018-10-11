@@ -216,7 +216,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 		  } else {
 			  tx_byte = (byte) Integer.toHexString((UART_current_byte & 0x0F)).charAt(0);
 		  }
-		  System.out.println("Current_byte: " + UART_current_byte + "tx_byte: " + tx_byte);
+//		  System.out.println("Current_byte: " + UART_current_byte + "tx_byte: " + tx_byte);
 		  uart.byteReceived(tx_byte);
 		  cpu.scheduleTimeEventMillis(uartSendEvent, UART_BYTE_DURATION);
 		  UART_send_high_next = !UART_send_high_next;
@@ -231,7 +231,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   
   private boolean setState(RadioState new_state) {
 	  stateMachine = new_state;
-	  System.out.println("Setting state: " + new_state);
+//	  System.out.println("Setting state: " + new_state);
 	  
 	  switch (new_state) {
 	  case IDLE:
@@ -270,7 +270,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
   public void dataReceived(USARTSource source, int data) {
 	  uart = source;
-	  System.out.println("Data received " + data);
+//	  System.out.println("Data received " + data);
 	  if (state == UartState.DATA_WAIT) {
 		  switch (stateMachine) {
 		  	case IDLE:

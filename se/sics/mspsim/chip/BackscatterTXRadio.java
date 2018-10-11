@@ -153,10 +153,6 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
     /* Contains the length of the PPDU. */
     txBuffer[5] = 0;
     
-    for(int i = 6; i < 133; i++) {
-    	txBuffer[i] = i;
-    }
-
     rxFIFO.reset();
   }
 
@@ -321,7 +317,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 							if (payload > 0) {
 								// The payloadLegth consists of the payload itself plus 2 bytes
 						        // for the CRC.
-						        payloadLength =  payload + 2 + 100; // Adding some extra payload
+						        payloadLength =  payload + 2;
 						        
 						        // txBuffer[5] contains the length of the PSDU(p.36 - CC2420 datasheet). 
 						        txBuffer[5] = (payloadLength & 0x7F);

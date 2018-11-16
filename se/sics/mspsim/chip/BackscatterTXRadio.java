@@ -92,6 +92,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 	public static final int MODE_TXRX_OFF = 0x00;
 	public static final int MODE_RX_ON = 0x01;
 	public static final int MODE_TX_ON = 0x02;
+	public static final int MODE_MAX = MODE_TX_ON;
 	private static final String[] MODE_NAMES = new String[] { "off", "listen", "transmit" };
 
 	public static final byte FLAG_WRITE = 0x40;
@@ -213,18 +214,21 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 
 		switch (new_state) {
 		case TX_FRAME:
+			setMode(MODE_TX_ON);
 			txNext();
 			break;
 		case RX_SFD_SEARCH:
 			zeroSymbols = 0;
 			rxFIFO.reset();
 			bufferPos = 0;
+			setMode(MODE_RX_ON);
 			break;
 		case RX_FRAME:
 			rxlen = 0;
 			rxread = 0;
 			break;
 		case IDLE:
+			setMode(MODE_TXRX_OFF);
 			rxFIFO.reset();
 			txbufferPos = 6;
 			bufferPos = 0;
@@ -338,15 +342,16 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 	/* Not used by the tag */
 	@Override
 	public int getModeMax() {
-		return 0;
+		return MODE_MAX;
 	}
 
 	@Override
 	public int getMode() {
 		if (stateMachine == RadioState.IDLE) {
 			return MODE_TXRX_OFF;
-		} else if (stateMachine == RadioState.RX_DATA_TRANSFER || stateMachine == RadioState.RX_FRAME
-				|| stateMachine == RadioState.RX_SFD_SEARCH) {
+		} else if (stateMachine == RadioState.RX_DATA_TRANSFER || 
+				   stateMachine == RadioState.RX_FRAME ||
+				   stateMachine == RadioState.RX_SFD_SEARCH) {
 			return MODE_RX_ON;
 		} else {
 			return MODE_TX_ON;
@@ -425,5 +430,4 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 		fifopPort = port;
 		fifopPin = pin;
 	}
-
 } /* BackscatterTXRadio */

@@ -410,8 +410,9 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 					rxlen = data & 0xff;
 				}
 				if (rxread++ == rxlen) {
-					setState(RadioState.RX_DATA_TRANSFER);
+					setSFD(false);
 					setFIFOP(true);
+					setState(RadioState.RX_DATA_TRANSFER);
 				}
 			}
 		}

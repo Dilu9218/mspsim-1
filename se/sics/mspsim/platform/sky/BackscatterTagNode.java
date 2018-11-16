@@ -47,7 +47,7 @@ public class BackscatterTagNode extends SkyNode {
   public static int TAG_CHIP_SELECT = 1;
   // Battery-free tag FIFOP pin: P1.0
   public static int TAG_FIFOP = 0;
-  // Battery-free tag SFD pin: P2.1
+  // Battery-free tag SFD pin: P4.1
   public static int TAG_SFD = 1;
     
   public BackscatterTXRadio tag;
@@ -81,6 +81,6 @@ public class BackscatterTagNode extends SkyNode {
     
     port1.addPortListener(this);
     tag.setFIFOPPort(port1, TAG_FIFOP);
-    tag.setSFDPort(port2, TAG_SFD);
+    tag.setSFDPort(port4, TAG_SFD);
   }
 }

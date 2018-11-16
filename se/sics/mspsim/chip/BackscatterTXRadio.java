@@ -231,10 +231,12 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 	  
 	  switch (new_state) {
 	  case IDLE:
+	    setMode(MODE_TXRX_OFF);
 		  break;
 	  case RX_SFD_SEARCH:
 		  zeroSymbols = 0;
 		  rxFIFO.reset();
+		  setMode(MODE_RX_ON);
 		  break;
 		  
 	  case RX_FRAME:
@@ -256,6 +258,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
 		  last_char = '\0';
 		  char_count = 0;
 		  state = UartState.DATA_WAIT;
+		  setMode(MODE_TX_ON);
 		  break;
 		  
 	  default:
@@ -419,7 +422,7 @@ public class BackscatterTXRadio extends Chip implements USARTListener, RFSource 
   /* Not used by the tag */
   @Override
   public int getModeMax() {
-    return 0;
+    return MODE_TX_ON;
   }
   
   @Override

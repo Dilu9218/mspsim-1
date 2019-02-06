@@ -209,7 +209,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
      TX_ACK_PREAMBLE(49),
      TX_ACK(52),
      TX_UNDERFLOW(56),
-     CARRIER_TEST(32);
+     CARRIER_TEST(63); // Value observed while in (umodulated) radio test mode. Experimentally obtained.
 
      private final int state;
      RadioState(int stateNo) {
@@ -378,6 +378,10 @@ public class CC2420 extends Radio802154 implements USARTListener {
         updateCCA();
         break;
 
+      case CARRIER_TEST:
+          setState(RadioState.CARRIER_TEST);
+          break;
+
       case TX_CALIBRATE:
         setState(RadioState.TX_PREAMBLE);
         break;
@@ -485,6 +489,11 @@ public class CC2420 extends Radio802154 implements USARTListener {
       setMode(MODE_RX_ON);
       break;
 
+    case CARRIER_TEST:
+        setSymbolEvent(12 + 2);
+        setMode(MODE_TEST_CARRIER_ON);
+        break;
+    	
     case TX_CALIBRATE:
       /* 12 symbols calibration, and one byte's wait since we deliver immediately
        * to listener when after calibration?
@@ -551,9 +560,6 @@ public class CC2420 extends Radio802154 implements USARTListener {
       frameRejected = false;
       shouldAck = false;
       crcOk = false;
-      break;
-    case CARRIER_TEST:
-      setMode(MODE_TEST_CARRIER_ON);
       break;
     }
 
@@ -994,7 +1000,7 @@ public class CC2420 extends Radio802154 implements USARTListener {
           log("WARNING: turning off RXTX during " + stateMachine);
         }
       }
-      
+      status &= ~(STATUS_TX_ACTIVE);
       setState(RadioState.IDLE);
       
       break;
